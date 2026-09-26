@@ -279,6 +279,7 @@
         <div><label class="text-xs font-bold uppercase">Valor</label><input id="extValor" class="w-full border rounded-xl p-3" placeholder="R$ 0,00"></div><div><label class="text-xs font-bold uppercase">Data de assinatura</label><input id="extAssinatura" type="date" class="w-full border rounded-xl p-3"></div>
         <div><label class="text-xs font-bold uppercase">Início da vigência</label><input id="extInicio" type="date" class="w-full border rounded-xl p-3"></div><div><label class="text-xs font-bold uppercase">Vencimento *</label><input id="extFim" type="date" class="w-full border rounded-xl p-3"></div>
         <div class="md:col-span-2"><label class="text-xs font-bold uppercase">Observações</label><textarea id="extNotas" rows="3" class="w-full border rounded-xl p-3"></textarea></div>
+        <div class="md:col-span-2"><label class="text-xs font-bold uppercase">Resumo do contrato</label><textarea id="extResumo" rows="12" class="w-full border rounded-xl p-3 text-sm leading-relaxed" placeholder="Gerado automaticamente ao selecionar o arquivo. Você pode editar."></textarea></div>
       </div><div class="flex justify-end gap-3"><button type="button" data-page="externos" class="border rounded-xl px-4 py-3">Cancelar</button><button id="salvarExterno" class="bg-blue-600 text-white font-bold rounded-xl px-5 py-3">Salvar contrato externo</button></div></div>
     </section>
     <section id="modelo" class="section animate-fade-in space-y-6" style="display:none">
@@ -323,6 +324,18 @@
 
       <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8 space-y-8">
         <input type="hidden" id="id">
+        <div class="bg-blue-50/60 border border-blue-200 rounded-2xl p-5 space-y-3">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-blue-800 mb-1">Importar contrato em PDF</label>
+            <p class="text-sm text-slate-600">Envie um contrato pronto e o sistema preenche partes, valores, datas, objeto e foro, e gera o resumo.</p>
+          </div>
+          <input id="intArquivo" type="file" accept=".pdf,.txt,application/pdf,text/plain" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm">
+          <p id="intArquivoInfo" class="text-xs text-slate-500">Opcional. Confira os dados preenchidos antes de salvar.</p>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Resumo do contrato</label>
+            <textarea id="resumo" rows="10" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm leading-relaxed" placeholder="Gerado automaticamente ao importar um PDF. Você também pode escrever ou editar."></textarea>
+          </div>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
@@ -1104,7 +1117,7 @@ function preencher(x={}){
 }
 
 function limpar(){
-  ['id','numero','nome','docContratante','docContratada','enderecoContratante','enderecoContratada','telefoneContratante','telefoneContratada','inicio','fim','valor','pagamento','objeto','parcelas','tipoPagamento','foro'].forEach(x=>$(x).value='');
+  ['id','numero','nome','docContratante','docContratada','enderecoContratante','enderecoContratada','telefoneContratante','telefoneContratada','inicio','fim','valor','pagamento','objeto','parcelas','tipoPagamento','foro','resumo','intArquivo'].forEach(x=>$(x).value='');$('intArquivoInfo').textContent='Opcional. Confira os dados preenchidos antes de salvar.';
   $('status').value='Minuta';$('parcelas').value='1';$('valorParcela').textContent='R$ 0,00';
 }
 
@@ -1539,6 +1552,7 @@ function objetoContrato(){
     pagamento:$('pagamento').value,
     objeto:$('objeto').value,
     foro:$('foro').value,
+    resumo:$('resumo').value,
     vals:values(),
     signatarios:lerSignatarios(),
     assinaturaStatus:$('assinaturaStatus')?.textContent||'Não enviado',
@@ -1628,14 +1642,128 @@ function badgeStatus(s){
 
 function abrirBanco(){return new Promise((resolve,reject)=>{let r=indexedDB.open('contratosProArquivos',1);r.onupgradeneeded=()=>r.result.createObjectStore('arquivos');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 async function arquivoOpLocal(acao,id,arquivo){let db=await abrirBanco();return new Promise((resolve,reject)=>{let tx=db.transaction('arquivos',acao==='ler'?'readonly':'readwrite'),r=tx.objectStore('arquivos')[acao==='guardar'?'put':acao==='excluir'?'delete':'get'](...(acao==='guardar'?[arquivo,id]:[id]));r.onsuccess=()=>{if(acao==='ler'){db.close();resolve(r.result)}};tx.oncomplete=()=>{if(acao!=='ler'){db.close();resolve()}};tx.onerror=()=>{db.close();reject(tx.error)}})}
-function novoExterno(x={}){if(!pode('contratos',x.id?'editar':'criar'))return toast('Acesso restrito.');arquivoExternoPendente=null;for(let campo of ['nome','contratante','contratada','valor','assinatura','inicio','fim','notas'])$('ext'+campo[0].toUpperCase()+campo.slice(1)).value=x[campo]||'';$('extId').value=x.id||'';$('extArquivo').value='';$('extArquivoInfo').textContent=x.arquivoNome?'Arquivo atual: '+x.arquivoNome+'. Selecione outro para substituir.':'Selecione o arquivo e confira os dados sugeridos.';$('extFormTitulo').textContent=x.id?'Editar contrato externo':'Novo contrato externo';abrir('externoForm')}
+function novoExterno(x={}){if(!pode('contratos',x.id?'editar':'criar'))return toast('Acesso restrito.');arquivoExternoPendente=null;for(let campo of ['nome','contratante','contratada','valor','assinatura','inicio','fim','notas','resumo'])$('ext'+campo[0].toUpperCase()+campo.slice(1)).value=x[campo]||'';$('extId').value=x.id||'';$('extArquivo').value='';$('extArquivoInfo').textContent=x.arquivoNome?'Arquivo atual: '+x.arquivoNome+'. Selecione outro para substituir.':'Selecione o arquivo e confira os dados sugeridos.';$('extFormTitulo').textContent=x.id?'Editar contrato externo':'Novo contrato externo';abrir('externoForm')}
 async function leitorPdf(){if(window.pdfjsLib)return pdfjsLib;return new Promise((resolve,reject)=>{let tag=document.createElement('script');tag.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';tag.onload=()=>{if(!window.pdfjsLib)return reject(new Error('Leitor indisponível'));pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';resolve(pdfjsLib)};tag.onerror=()=>reject(new Error('Leitor indisponível'));document.head.appendChild(tag)})}
-async function textoExterno(f){if(/\.txt$/i.test(f.name))return f.text();let lib=await leitorPdf(),pdf=await lib.getDocument({data:await f.arrayBuffer()}).promise,partes=[];for(let i=1;i<=Math.min(pdf.numPages,30);i++){let page=await pdf.getPage(i),t=await page.getTextContent();partes.push(t.items.map(x=>x.str).join(' '))}return partes.join('\n')}
+async function textoExterno(f){if(/\.txt$/i.test(f.name))return f.text();let lib=await leitorPdf(),pdf=await lib.getDocument({data:await f.arrayBuffer()}).promise,partes=[];for(let i=1;i<=Math.min(pdf.numPages,60);i++){let page=await pdf.getPage(i),t=await page.getTextContent();partes.push(t.items.map(x=>x.str).join(' '))}return partes.join('\n')}
+// ================= LEITURA INTELIGENTE DE CONTRATOS =================
+const FUNCAO_ANALISE=SUPABASE_URL+'/functions/v1/analisar-contrato';
+function arquivoParaBase64(f){return new Promise((ok,erro)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=()=>erro(r.error);r.readAsDataURL(f)})}
+function limparTxt(v){return String(v??'').replace(/\s+/g,' ').trim()}
+function trechoCom(t,re,max=320){const frases=t.split(/(?<=[.;])\s+/);const f=frases.find(x=>re.test(x)&&x.length>=40&&!/^CL[ÁA]USULA\b[^.]{0,80}\.?$/i.test(x.trim()))||frases.find(x=>re.test(x));return f?limparTxt(f).slice(0,max):''}
+function extrairParte(seg){
+  const p={nome:'',documento:'',endereco:'',telefone:'',email:''};if(!seg)return p;
+  const nome=seg.match(/^\s*[:,–-]?\s*([^,;]{3,120}?)(?=,|\s+(?:pessoa|inscrit|portador|brasileir|CNPJ|CPF|com sede|residente|estabelecid|neste ato))/i);if(nome)p.nome=limparTxt(nome[1]).replace(/^(?:a|o)\s+(?=[A-ZÁÉÍÓÚ])/,'');
+  const doc=seg.match(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/)||seg.match(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/);if(doc)p.documento=doc[0];
+  const end=seg.match(/(?:com sede|sediad[ao]|residente e domiciliad[ao]|residente|domiciliad[ao]|estabelecid[ao])\s+(?:na|no|em|à|a)\s+([^;]{8,180}?)(?=,\s*(?:neste ato|doravante|inscrit|CEP\s*[\d.-]+\s*[,;.]|representad)|;|\.\s)/i);if(end)p.endereco=limparTxt(end[1]);
+  const cep=seg.match(/CEP\s*[:nº]*\s*\d{2}\.?\d{3}-?\d{3}/i);if(cep&&p.endereco&&!p.endereco.includes(cep[0]))p.endereco+=', '+cep[0];
+  const tel=seg.match(/\(?\b\d{2}\)?\s?9?\d{4}-?\d{4}\b/);if(tel)p.telefone=tel[0];
+  const em=seg.match(/[\w.+-]+@[\w-]+\.[\w.]+/);if(em)p.email=em[0].replace(/[.,;]$/,'');
+  return p;
+}
+function extrairLocal(texto,nomeArquivo){
+  const t=limparTxt(texto);const d={};
+  const iA=t.search(/CONTRATANTE\b/),iB=t.search(/CONTRATAD[AO]\b/);
+  d.titulo=limparTxt(t.slice(0,iA>0?Math.min(iA,160):120)).replace(/[:\-–]+$/,'')||nomeArquivo.replace(/\.(pdf|txt)$/i,'');
+  if(iA>=0)d.contratante=extrairParte(t.slice(iA+11,iB>iA?iB:iA+600));
+  if(iB>=0)d.contratada=extrairParte(t.slice(iB+11,iB+600).replace(/^[AO]\b/,''));
+  const obj=t.match(/tem (?:como|por) objeto\s*(?:a|o)?\s*([^.]{10,400})/i)||t.match(/DO OBJETO\s*[:.–-]?\s*(?:CL[ÁA]USULA[^:]*:)?\s*([^.]{10,400})/i);if(obj)d.objeto=limparTxt(obj[1]);
+  const val=t.match(/valor\s+(?:total|global|mensal)?[^R]{0,60}(R\$\s*[\d.]+,\d{2})/i)||t.match(/R\$\s*[\d.]+,\d{2}/);if(val)d.valor=moeda(val[1]||val[0]);
+  const parc=t.match(/(\d{1,3})\s*(?:\([^)]{2,40}\))?\s*parcelas/i);if(parc)d.parcelas=+parc[1];
+  for(const m of ['Pix','Boleto','Transferência bancária','Cartão de crédito','Cartão de débito','Dinheiro'])if(new RegExp(m.split(' ')[0],'i').test(t)){d.meioPagamento=m;break}
+  const datas=[...t.matchAll(/\b(\d{2})[\/.-](\d{2})[\/.-](\d{4})\b/g)].map(m=>dataISO(`${m[1]}/${m[2]}/${m[3]}`)).filter(Boolean);
+  const periodo=t.match(/(?:vig[eê]ncia|prazo)[\s\S]{0,130}?(\d{2}[\/.-]\d{2}[\/.-]\d{4})[\s\S]{0,95}?(\d{2}[\/.-]\d{2}[\/.-]\d{4})/i);
+  if(periodo){d.inicio=dataISO(periodo[1].replace(/[.-]/g,'/'))||'';d.fim=dataISO(periodo[2].replace(/[.-]/g,'/'))||''}
+  const prazo=t.match(/prazo\s+(?:de\s+vig[eê]ncia\s+)?(?:de\s+)?(\d{1,3})\s*(?:\([^)]{2,30}\))?\s*(dias|meses|mês|anos?)/i);if(prazo)d.prazo=prazo[1]+' '+prazo[2];
+  const extenso=t.match(/,\s*(\d{1,2})\s+de\s+(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+(\d{4})/i);
+  if(extenso){const mes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'].indexOf(extenso[2].toLowerCase())+1;d.assinatura=`${extenso[3]}-${String(mes).padStart(2,'0')}-${extenso[1].padStart(2,'0')}`}
+  else if(datas.length)d.assinatura=datas[datas.length-1];
+  if(!d.inicio&&d.assinatura)d.inicio=d.assinatura;
+  if(!d.fim&&prazo&&d.inicio){const f=new Date(d.inicio+'T00:00:00'),n=+prazo[1],u=prazo[2].toLowerCase();if(u.startsWith('dia'))f.setDate(f.getDate()+n);else if(u.startsWith('ano'))f.setFullYear(f.getFullYear()+n);else f.setMonth(f.getMonth()+n);d.fim=f.toISOString().slice(0,10)}
+  const foro=t.match(/foro\s+(?:da\s+)?(?:comarca\s+)?de\s+([^,.;]{3,60})/i);if(foro)d.foro='Comarca de '+limparTxt(foro[1]);
+  d.multas=trechoCom(t,/multa/i);d.rescisao=trechoCom(t,/rescis|rescind/i);d.reajuste=trechoCom(t,/reajust/i);
+  return d;
+}
+function normalizarIA(r){
+  const parte=x=>({nome:x?.nome||'',documento:x?.documento||'',endereco:x?.endereco||'',telefone:x?.telefone||'',email:x?.email||'',representante:x?.representante||''});
+  return {titulo:r.titulo||'',numero:r.numero||'',tipo:r.tipo||'',objeto:r.objeto||'',contratante:parte(r.contratante),contratada:parte(r.contratada),
+    valor:r.valor_total!=null&&r.valor_total!==''?moeda(Number(r.valor_total).toFixed(2)):'',parcelas:r.parcelas||'',formaPagamento:r.forma_pagamento||'',meioPagamento:r.meio_pagamento||'',
+    assinatura:dataISO(r.data_assinatura)||'',inicio:dataISO(r.inicio)||'',fim:dataISO(r.fim)||'',prazo:r.prazo||'',reajuste:r.reajuste||'',multas:r.multas||'',rescisao:r.rescisao||'',
+    garantias:r.garantias||'',confidencialidade:r.confidencialidade||'',foro:r.foro||'',obrigacoesContratante:r.obrigacoes_contratante||[],obrigacoesContratada:r.obrigacoes_contratada||[],
+    testemunhas:r.testemunhas||[],pontosAtencao:r.pontos_atencao||[],resumoIA:r.resumo||''};
+}
+function montarResumo(d,fonte){
+  const L=[],add=(r,v)=>{if(v&&String(v).trim())L.push(r+': '+String(v).trim())},lista=(r,a)=>{if(Array.isArray(a)&&a.length)L.push(r+':\n'+a.map(x=>'  • '+x).join('\n'))};
+  const pt=p=>p?[p.nome,p.documento&&('Doc. '+p.documento),p.endereco,p.telefone,p.email,p.representante&&('Repr.: '+p.representante)].filter(Boolean).join(' — '):'';
+  if(d.resumoIA)L.push(d.resumoIA,'');
+  add('Título',d.titulo);add('Número',d.numero);add('Tipo',d.tipo);add('Objeto',d.objeto);
+  add('Contratante',pt(d.contratante));add('Contratada',pt(d.contratada));
+  add('Valor',d.valor);add('Parcelas',d.parcelas);add('Pagamento',[d.formaPagamento,d.meioPagamento].filter(Boolean).join(' — '));
+  add('Assinatura',dataBR(d.assinatura));add('Vigência',[d.inicio&&('de '+dataBR(d.inicio)),d.fim&&('até '+dataBR(d.fim)),d.prazo&&('('+d.prazo+')')].filter(Boolean).join(' '));
+  add('Reajuste',d.reajuste);add('Multas',d.multas);add('Rescisão',d.rescisao);add('Garantias',d.garantias);add('Confidencialidade',d.confidencialidade);add('Foro',d.foro);
+  lista('Obrigações da contratante',d.obrigacoesContratante);lista('Obrigações da contratada',d.obrigacoesContratada);lista('Testemunhas',d.testemunhas);lista('⚠ Pontos de atenção',d.pontosAtencao);
+  L.push('','(Resumo gerado '+(fonte==='ia'?'por inteligência artificial':'automaticamente sem IA')+' em '+new Date().toLocaleDateString('pt-BR')+'. Confira com o documento original.)');
+  return L.join('\n');
+}
+async function analisarArquivoContrato(f,aviso=()=>{}){
+  aviso('Lendo o arquivo...');
+  let texto='';try{texto=await textoExterno(f)}catch(e){console.error(e)}
+  aviso('Analisando o contrato com IA... isso pode levar até 1 minuto.');
+  try{
+    const corpo={arquivoNome:f.name};
+    if(limparTxt(texto).length>200)corpo.texto=texto.slice(0,180000);
+    else if(/\.pdf$/i.test(f.name)&&f.size<=4*1024*1024)corpo.pdfBase64=await arquivoParaBase64(f);
+    else throw new Error('sem texto');
+    const {data:{session}}=await sb.auth.getSession();
+    const r=await fetch(FUNCAO_ANALISE,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+(session?.access_token||''),apikey:SUPABASE_KEY},body:JSON.stringify(corpo)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.dados)throw new Error(j.erro||('HTTP '+r.status));
+    const d=normalizarIA(j.dados);return {dados:d,resumo:montarResumo(d,'ia'),fonte:'ia'};
+  }catch(e){
+    console.warn('IA indisponível, usando leitura automática:',e.message);
+    if(!limparTxt(texto))return {dados:{},resumo:'',fonte:'nada'};
+    const d=extrairLocal(texto,f.name);return {dados:d,resumo:montarResumo(d,'local'),fonte:'local'};
+  }
+}
+function mensagemFonte(r){return r.fonte==='ia'?'✔ Contrato analisado com IA. Confira os campos e o resumo antes de salvar.':r.fonte==='local'?'Leitura automática (sem IA) concluída. Alguns campos podem precisar de ajuste manual.':'Não foi possível ler o texto deste arquivo (PDF escaneado?). Preencha manualmente.'}
+
+// ---- Contratos internos: importar PDF e preencher o formulário ----
+function garantirParte(tipoCad,p){
+  if(!p?.nome)return '';
+  const soNum=v=>String(v||'').replace(/\D/g,'');
+  let x=cad[tipoCad].find(a=>a.nome.toLowerCase()===p.nome.toLowerCase()||(p.documento&&soNum(a.doc)&&soNum(a.doc)===soNum(p.documento)));
+  if(!x){
+    if(!pode('cadastros','criar')){toast('Cadastre "'+p.nome+'" em '+(tipoCad==='contratantes'?'Contratantes':'Contratados')+' para selecioná-lo.');return ''}
+    x={id:Date.now().toString()+Math.floor(Math.random()*1000),nome:p.nome,doc:p.documento||'',telefone:p.telefone||'',endereco:p.endereco||'',email:p.email||''};
+    cad[tipoCad].push(x);save();
+  }
+  return x.nome;
+}
+async function importarInterno(){
+  const f=$('intArquivo').files[0];if(!f)return;
+  if(!/\.(pdf|txt)$/i.test(f.name)||f.size>20*1024*1024){$('intArquivo').value='';return toast('Selecione PDF ou TXT de até 20 MB.')}
+  const info=t=>$('intArquivoInfo').textContent=t;
+  const r=await analisarArquivoContrato(f,info),d=r.dados;
+  const set=(id,v)=>{if(v!==undefined&&v!==null&&String(v).trim()!=='')$(id).value=v};
+  set('nome',d.titulo||d.objeto);set('objeto',d.objeto);set('foro',d.foro);
+  set('inicio',dataBR(d.inicio));set('fim',dataBR(d.fim));set('valor',d.valor);
+  if(d.parcelas)set('parcelas',Math.min(360,Math.max(1,parseInt(d.parcelas)||1)));
+  const meio=[...$('tipoPagamento').options].find(o=>o.value&&d.meioPagamento&&o.value.toLowerCase()===String(d.meioPagamento).toLowerCase());if(meio)$('tipoPagamento').value=meio.value;
+  const ct=garantirParte('contratantes',d.contratante),cd=garantirParte('contratados',d.contratada);
+  const tipo=cad.tipos.find(t=>d.tipo&&(t.nome.toLowerCase().includes(String(d.tipo).toLowerCase())||String(d.tipo).toLowerCase().includes(t.nome.toLowerCase())));
+  preencher({contratante:ct||$('contratante').value,contratada:cd||$('contratada').value,tipo:tipo?.nome||$('tipo').value});
+  for(const [p,q] of [['contratante','Contratante'],['contratada','Contratada']]){const x=d[p];if(!x)continue;set('doc'+q,x.documento);set('endereco'+q,x.endereco);set('telefone'+q,x.telefone)}
+  if(r.resumo)$('resumo').value=r.resumo;
+  atualizarPagamento();
+  info(mensagemFonte(r));
+  toast(r.fonte==='nada'?'Não foi possível ler o arquivo.':'Dados do contrato preenchidos.');
+}
+// ===================================================================
+
 function extrairExterno(texto,nome){let t=texto.replace(/\s+/g,' ').trim(),dados={nome:nome.replace(/\.(pdf|txt)$/i,'')};let objeto=t.match(/(?:objeto do contrato|contrato de|prestação de serviços de)\s*[:–-]?\s*([^.;]{8,100})/i);if(objeto)dados.nome=objeto[1].trim();let datas=[...texto.matchAll(/\b(\d{2})[\/.-](\d{2})[\/.-](\d{4})\b/g)].map(m=>dataISO(`${m[1]}/${m[2]}/${m[3]}`)).filter(Boolean);let periodo=t.match(/(?:vig[eê]ncia|prazo)[\s\S]{0,130}?(\d{2}[\/.-]\d{2}[\/.-]\d{4})[\s\S]{0,95}?(\d{2}[\/.-]\d{2}[\/.-]\d{4})/i);if(periodo){dados.inicio=dataISO(periodo[1].replace(/[.-]/g,'/'));dados.fim=dataISO(periodo[2].replace(/[.-]/g,'/'))}else{dados.assinatura=datas[0]||'';dados.fim=datas[1]||''}dados.valor=moeda(t.match(/R\$\s*[\d.]+,\d{2}/)?.[0]||'');dados.contratante=t.match(/CONTRATANTE\s*[:–-]\s*([^,;.]{4,90})/i)?.[1]?.trim()||'';dados.contratada=t.match(/CONTRATAD[AO]\s*[:–-]\s*([^,;.]{4,90})/i)?.[1]?.trim()||'';return dados}
-async function escolherExterno(){let f=$('extArquivo').files[0];if(!f)return;if(!/\.(pdf|txt)$/i.test(f.name)||f.size>20*1024*1024){$('extArquivo').value='';return toast('Selecione PDF ou TXT de até 20 MB.')}arquivoExternoPendente=f;$('extArquivoInfo').textContent='Lendo arquivo...';try{let t=await textoExterno(f),d=extrairExterno(t,f.name);for(let [k,v] of Object.entries(d)){let campo=$('ext'+k[0].toUpperCase()+k.slice(1));if(campo&&v&&!campo.value)campo.value=v}$('extArquivoInfo').textContent=t.trim()?'Dados sugeridos a partir do arquivo. Confira principalmente o vencimento.':'PDF sem texto selecionável: preencha os campos manualmente.'}catch(e){$('extArquivoInfo').textContent='Leitura automática indisponível. Preencha os campos manualmente e salve o arquivo.'}}
-async function salvarExterno(){let id=$('extId').value,edicao=!!id;if(!pode('contratos',edicao?'editar':'criar'))return toast('Acesso restrito.');if(!$('extNome').value.trim()||!$('extFim').value)return toast('Informe título e vencimento.');id=id||'ext_'+Date.now()+'_'+Math.random().toString(36).slice(2);let antigo=contratosExternos.find(x=>x.id===id),arquivoNome=antigo?.arquivoNome||'';if(arquivoExternoPendente){try{await arquivoOp('guardar',id,arquivoExternoPendente);arquivoNome=arquivoExternoPendente.name}catch(e){return toast('Falha ao enviar o arquivo: '+msgErro(e))}}let x={id,arquivoNome,atualizado:Date.now()};for(let k of ['nome','contratante','contratada','valor','assinatura','inicio','fim','notas'])x[k]=$('ext'+k[0].toUpperCase()+k.slice(1)).value.trim();x.valor=moeda(x.valor);contratosExternos=contratosExternos.filter(a=>a.id!==id);contratosExternos.push(x);save();arquivoExternoPendente=null;abrir('externos');toast('Contrato externo salvo.')}
+async function escolherExterno(){let f=$('extArquivo').files[0];if(!f)return;if(!/\.(pdf|txt)$/i.test(f.name)||f.size>20*1024*1024){$('extArquivo').value='';return toast('Selecione PDF ou TXT de até 20 MB.')}arquivoExternoPendente=f;const novo=!$('extId').value;const r=await analisarArquivoContrato(f,t=>$('extArquivoInfo').textContent=t),d=r.dados;const campos={nome:d.titulo||d.objeto,contratante:d.contratante?.nome,contratada:d.contratada?.nome,valor:d.valor,assinatura:d.assinatura,inicio:d.inicio,fim:d.fim};for(const [k,v] of Object.entries(campos)){const c=$('ext'+k[0].toUpperCase()+k.slice(1));if(c&&v&&(novo||!c.value))c.value=v}if(r.resumo)$('extResumo').value=r.resumo;$('extArquivoInfo').textContent=mensagemFonte(r)}
+async function salvarExterno(){let id=$('extId').value,edicao=!!id;if(!pode('contratos',edicao?'editar':'criar'))return toast('Acesso restrito.');if(!$('extNome').value.trim()||!$('extFim').value)return toast('Informe título e vencimento.');id=id||'ext_'+Date.now()+'_'+Math.random().toString(36).slice(2);let antigo=contratosExternos.find(x=>x.id===id),arquivoNome=antigo?.arquivoNome||'';if(arquivoExternoPendente){try{await arquivoOp('guardar',id,arquivoExternoPendente);arquivoNome=arquivoExternoPendente.name}catch(e){return toast('Falha ao enviar o arquivo: '+msgErro(e))}}let x={id,arquivoNome,atualizado:Date.now()};for(let k of ['nome','contratante','contratada','valor','assinatura','inicio','fim','notas','resumo'])x[k]=$('ext'+k[0].toUpperCase()+k.slice(1)).value.trim();x.valor=moeda(x.valor);contratosExternos=contratosExternos.filter(a=>a.id!==id);contratosExternos.push(x);save();arquivoExternoPendente=null;abrir('externos');toast('Contrato externo salvo.')}
 function prazoExterno(x){let hoje=new Date();hoje.setHours(0,0,0,0);let dias=Math.ceil((new Date(x.fim+'T00:00:00')-hoje)/86400000);return dias<0?'Vencido':dias<=60?'Vence em '+dias+' dia(s)':'Vigente'}
-function renderExternos(){$('extTotal').textContent=contratosExternos.length;$('extVigentes').textContent=contratosExternos.filter(x=>prazoExterno(x)==='Vigente').length;$('extVencendo').textContent=contratosExternos.filter(x=>prazoExterno(x).startsWith('Vence em')).length;$('extVencidos').textContent=contratosExternos.filter(x=>prazoExterno(x)==='Vencido').length;let q=$('extBusca').value.toLowerCase();$('extLista').innerHTML=contratosExternos.filter(x=>(x.nome+' '+x.contratante+' '+x.contratada).toLowerCase().includes(q)).sort((a,b)=>a.fim.localeCompare(b.fim)).map(x=>`<article class="bg-white border rounded-xl p-5 flex flex-wrap justify-between gap-4"><div><h3 class="font-bold">${esc(x.nome)}</h3><p class="text-sm text-slate-600">${esc(x.contratante||'Contratante não informado')} → ${esc(x.contratada||'Contratada não informada')}</p><p class="text-sm">Valor: ${esc(x.valor||'—')} · Início: ${esc(dataBR(x.inicio)||'—')} · Vencimento: <b>${esc(dataBR(x.fim))}</b> · ${esc(prazoExterno(x))}</p><p class="text-xs text-slate-500">${esc(x.arquivoNome||'Sem arquivo')}</p></div><div class="flex flex-wrap gap-2 items-center">${x.arquivoNome?`<button class="ext-abrir bg-blue-50 text-blue-700 rounded-lg px-3 py-2 text-sm" data-id="${esc(x.id)}">Baixar arquivo</button>`:''}<button class="ext-editar border rounded-lg px-3 py-2 text-sm" data-id="${esc(x.id)}">Editar</button><button class="ext-excluir text-red-700 border rounded-lg px-3 py-2 text-sm" data-id="${esc(x.id)}">Excluir</button></div></article>`).join('')||'<p class="bg-white p-8 text-center rounded-xl border text-slate-500">Nenhum contrato externo encontrado.</p>'}
+function renderExternos(){$('extTotal').textContent=contratosExternos.length;$('extVigentes').textContent=contratosExternos.filter(x=>prazoExterno(x)==='Vigente').length;$('extVencendo').textContent=contratosExternos.filter(x=>prazoExterno(x).startsWith('Vence em')).length;$('extVencidos').textContent=contratosExternos.filter(x=>prazoExterno(x)==='Vencido').length;let q=$('extBusca').value.toLowerCase();$('extLista').innerHTML=contratosExternos.filter(x=>(x.nome+' '+x.contratante+' '+x.contratada).toLowerCase().includes(q)).sort((a,b)=>a.fim.localeCompare(b.fim)).map(x=>`<article class="bg-white border rounded-xl p-5 flex flex-wrap justify-between gap-4"><div><h3 class="font-bold">${esc(x.nome)}</h3><p class="text-sm text-slate-600">${esc(x.contratante||'Contratante não informado')} → ${esc(x.contratada||'Contratada não informada')}</p><p class="text-sm">Valor: ${esc(x.valor||'—')} · Início: ${esc(dataBR(x.inicio)||'—')} · Vencimento: <b>${esc(dataBR(x.fim))}</b> · ${esc(prazoExterno(x))}</p><p class="text-xs text-slate-500">${esc(x.arquivoNome||'Sem arquivo')}</p>${x.resumo?`<details class="mt-2"><summary class="text-sm text-blue-700 cursor-pointer font-semibold">Ver resumo</summary><pre class="whitespace-pre-wrap text-sm text-slate-700 mt-2 bg-slate-50 border rounded-lg p-3" style="font-family:inherit">${esc(x.resumo)}</pre></details>`:''}</div><div class="flex flex-wrap gap-2 items-center">${x.arquivoNome?`<button class="ext-abrir bg-blue-50 text-blue-700 rounded-lg px-3 py-2 text-sm" data-id="${esc(x.id)}">Baixar arquivo</button>`:''}<button class="ext-editar border rounded-lg px-3 py-2 text-sm" data-id="${esc(x.id)}">Editar</button><button class="ext-excluir text-red-700 border rounded-lg px-3 py-2 text-sm" data-id="${esc(x.id)}">Excluir</button></div></article>`).join('')||'<p class="bg-white p-8 text-center rounded-xl border text-slate-500">Nenhum contrato externo encontrado.</p>'}
 async function baixarExterno(id){try{let f=await arquivoOp('ler',id);if(!f)return toast('Arquivo não encontrado.');let url=URL.createObjectURL(f),a=document.createElement('a');a.href=url;a.download=contratosExternos.find(x=>x.id===id)?.arquivoNome||'contrato.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){toast('Falha ao recuperar arquivo.')}}
 async function excluirExterno(id){if(!pode('contratos','excluir'))return toast('Acesso restrito.');if(!confirm('Excluir o contrato externo e seu arquivo?'))return;try{await arquivoOp('excluir',id)}catch(e){return toast('Falha ao excluir arquivo.')}contratosExternos=contratosExternos.filter(x=>x.id!==id);save();renderExternos();toast('Contrato externo excluído.')}
 
@@ -2088,6 +2216,7 @@ atualizarLogo();
 $('busca').addEventListener('input',render);
 $('extBusca').addEventListener('input',renderExternos);
 $('extArquivo').addEventListener('change',escolherExterno);
+$('intArquivo').addEventListener('change',importarInterno);
 $('contratoClausulas').addEventListener('input',e=>{if(e.target.matches('.variable'))colorirVariavel(e.target)});
 $('modeloClausulas').addEventListener('input',e=>{if(e.target.matches('.mtitulo'))renumerarModelo()});
 $('contratante').addEventListener('change',()=>{carregarParte('contratante');sincronizarSignatarios('Contratante')});
