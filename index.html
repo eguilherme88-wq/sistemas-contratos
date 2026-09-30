@@ -206,19 +206,12 @@
   html.dark .text-amber-700{color:#fcd34d !important}
   html.dark .text-violet-700{color:#c4b5fd !important}
   html.dark .text-violet-900{color:#ddd6fe !important}
-  /* campos de formulário */
-  html.dark input,html.dark select,html.dark textarea{color:#e2e8f0}
-  html.dark input::placeholder,html.dark textarea::placeholder{color:#7c8aa0}
-  html.dark select option{background:#111c2e;color:#e2e8f0}
-  /* campos variáveis do contrato (verde = preenchido / vermelho = pendente) */
-  html.dark .bg-green-50{background-color:#d1fae5 !important}
-  html.dark .border-green-400{border-color:#4ade80 !important}
-  html.dark .text-green-900{color:#000000 !important}
-  html.dark .bg-green-50::placeholder,html.dark .text-green-900::placeholder{color:#166534 !important}
+  html.dark .bg-green-50{background-color:rgba(16,185,129,.16) !important}
+  html.dark .border-green-400{border-color:#34d399 !important}
+  html.dark .text-green-900{color:#d1fae5 !important}
   html.dark .bg-red-50{background-color:rgba(248,113,113,.15) !important}
   html.dark .border-red-400{border-color:rgba(248,113,113,.5) !important}
   html.dark .text-red-900{color:#fecaca !important}
-  html.dark .bg-red-50::placeholder,html.dark .text-red-900::placeholder{color:#fca5a5 !important}
   /* scrollbar */
   html.dark .custom-scrollbar::-webkit-scrollbar-track{background:#0f1a2b}
   html.dark .custom-scrollbar::-webkit-scrollbar-thumb{background:#334155}
@@ -271,15 +264,52 @@
   html.dark .bg-rose-50\/20{background-color:rgba(244,63,94,.10) !important}
   html.dark .border-rose-200\/60{border-color:rgba(244,63,94,.35) !important}
 
-  /* Modelo Padrão: caixas de texto das cláusulas em "papel claro" com fonte preta */
-  html.dark .stexto,
-  html.dark .itexto{background-color:#ffffff !important;color:#000000 !important;border-color:#cbd5e1 !important}
-  html.dark .stexto::placeholder,
-  html.dark .itexto::placeholder{color:#64748b !important}
-
   /* botão "PDF assinado": usar a cor do hover como estado padrão no escuro */
   html.dark .baixar-assinado-lista{background-color:rgba(139,92,246,.24) !important;color:#ddd6fe !important}
   html.dark .baixar-assinado-lista:hover{background-color:rgba(139,92,246,.34) !important;color:#f3f0ff !important}
+
+  /* ================= CAMPOS DE PREENCHIMENTO NO TEMA ESCURO =================
+     Regra única para todo o sistema: fundo escuro e fonte branca em qualquer
+     input, select e textarea (inclusive os criados via JavaScript).
+     O ":not(#_c)" eleva a especificidade para vencer utilitários como
+     .bg-white/.bg-slate-50/.text-slate-600 e o fundo branco padrão do navegador. */
+  html.dark{color-scheme:dark}
+  html.dark #preview{color-scheme:light}
+  html.dark :is(input,select,textarea):not(:where([type="checkbox"],[type="radio"],[type="range"],[type="color"],[type="hidden"])):not(#_c){
+    background-color:#0f1a2b !important;
+    color:#f8fafc !important;
+    -webkit-text-fill-color:#f8fafc;
+    border-color:#2b3a52 !important;
+    caret-color:#f8fafc;
+  }
+  html.dark :is(input,textarea):not(#_c)::placeholder{color:#7c8aa0 !important;-webkit-text-fill-color:#7c8aa0;opacity:1}
+  html.dark :is(input,select,textarea):not(#_c):focus{border-color:#3b82f6 !important;outline:none;box-shadow:0 0 0 3px rgba(59,130,246,.25)}
+  /* somente leitura / desabilitado: continua escuro, um tom abaixo */
+  html.dark :is(input,select,textarea):not(:where([type="checkbox"],[type="radio"],[type="range"],[type="color"],[type="hidden"])):not(#_c):is([readonly],:disabled){background-color:#0b1526 !important;color:#e2e8f0 !important;-webkit-text-fill-color:#e2e8f0}
+  /* opções do select */
+  html.dark select:not(#_c) option,html.dark select:not(#_c) optgroup{background-color:#0f1a2b;color:#f8fafc}
+  /* datas: texto "dd/mm/aaaa" e ícone do calendário legíveis */
+  html.dark input[type="date"]:not(#_c)::-webkit-datetime-edit{color:#f8fafc}
+  html.dark :is(input[type="date"],input[type="datetime-local"],input[type="month"],input[type="time"]):not(#_c)::-webkit-calendar-picker-indicator{opacity:.9;cursor:pointer}
+  /* seletor de arquivo */
+  html.dark input[type="file"]:not(#_c)::file-selector-button{background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:8px;padding:6px 12px;margin-right:10px;cursor:pointer}
+  html.dark input[type="file"]:not(#_c)::file-selector-button:hover{background:#24334a}
+  /* preenchimento automático do navegador (evita fundo amarelo/azul claro) */
+  html.dark :is(input,textarea,select):not(#_c):-webkit-autofill,
+  html.dark :is(input,textarea,select):not(#_c):-webkit-autofill:hover,
+  html.dark :is(input,textarea,select):not(#_c):-webkit-autofill:focus{
+    -webkit-box-shadow:0 0 0 1000px #0f1a2b inset !important;
+    -webkit-text-fill-color:#f8fafc !important;
+    caret-color:#f8fafc;
+    transition:background-color 9999s ease-out 0s;
+  }
+  /* campos variáveis do contrato: status pela cor da borda/fundo, fonte sempre clara */
+  html.dark input.variable.bg-green-50:not(#_c){background-color:rgba(16,185,129,.16) !important;border-color:#34d399 !important;color:#ecfdf5 !important;-webkit-text-fill-color:#ecfdf5}
+  html.dark input.variable.bg-red-50:not(#_c){background-color:rgba(248,113,113,.16) !important;border-color:rgba(248,113,113,.7) !important;color:#fff1f2 !important;-webkit-text-fill-color:#fff1f2}
+  html.dark input.variable.bg-red-50:not(#_c)::placeholder{color:#fca5a5 !important;-webkit-text-fill-color:#fca5a5}
+  html.dark input.variable.border-blue-300:not(#_c){background-color:rgba(59,130,246,.14) !important;border-color:#60a5fa !important;color:#eff6ff !important;-webkit-text-fill-color:#eff6ff}
+  /* a folha de visualização/impressão continua em papel branco */
+  html.dark #preview :is(input,select,textarea):not(#_c){background-color:#fff !important;color:#111827 !important;-webkit-text-fill-color:#111827;border-color:#cbd5e1 !important}
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
