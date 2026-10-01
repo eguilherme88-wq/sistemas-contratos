@@ -310,6 +310,10 @@
   html.dark input.variable.border-blue-300:not(#_c){background-color:rgba(59,130,246,.14) !important;border-color:#60a5fa !important;color:#eff6ff !important;-webkit-text-fill-color:#eff6ff}
   /* a folha de visualização/impressão continua em papel branco */
   html.dark #preview :is(input,select,textarea):not(#_c){background-color:#fff !important;color:#111827 !important;-webkit-text-fill-color:#111827;border-color:#cbd5e1 !important}
+  html.dark .bg-violet-50{background-color:rgba(139,92,246,.15) !important}
+  html.dark .text-violet-700{color:#c4b5fd !important}
+  html.dark .border-violet-200{border-color:rgba(139,92,246,.45) !important}
+  html.dark .text-amber-600{color:#fbbf24 !important}
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
@@ -916,9 +920,11 @@
           <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Perfil do Usuário</label>
             <select class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800" id="uperfil">
-              <option value="usuario">Usuário Padrão</option>
-              <option value="admin">Administrador Geral</option>
+              <option value="usuario">Usuário</option>
+              <option value="master">Master</option>
+              <option value="admin">Administrador</option>
             </select>
+            <p class="text-xs text-slate-500 mt-2" id="uperfilAjuda"></p>
           </div>
           <div class="md:col-span-2 bg-amber-50/60 border border-amber-200 rounded-2xl p-5">
             <div class="flex flex-col md:flex-row md:items-end gap-4">
@@ -1061,6 +1067,7 @@ usuarios=usuarios.map(x=>{
   return x;
 });
 let atual=null,cadTipo='contratantes',contratoAditivoAtual=null;
+let senhasUsuarios={},senhasStatus='';
 
 // ======================= SUPABASE =======================
 const SUPABASE_URL='https://arulbvghzjzjtrxwsepk.supabase.co';
@@ -1274,10 +1281,23 @@ function atualizarCampoTeste(){
   $('utesteDias').disabled=semLimite || !somenteAdmin;
 }
 
+/* ---------- Níveis de acesso ----------
+   Administrador: acesso total, gerencia todos os usuários e vê as senhas.
+   Master: gerencia apenas usuários de nível "Usuário" (não cria, edita nem exclui Administrador ou Master).
+   Usuário: não acessa "Usuários e Acessos". */
+const NIVEIS={admin:'Administrador',master:'Master',usuario:'Usuário'};
+function nomeNivel(p){return NIVEIS[p]||'Usuário'}
+function podeGerenciar(alvo){
+  if(!atual||!alvo)return false;
+  if(atual.perfil==='admin')return true;
+  if(atual.perfil==='master')return (alvo.perfil||'usuario')==='usuario';
+  return false;
+}
 function pode(p,acao='visualizar'){
   if(!atual)return false;
   if(trialExpirado(atual)){ encerrarPorExpiracao(); return false; }
   if(atual.perfil==='admin')return true;
+  if(p==='usuarios')return atual.perfil==='master';
   const a=atual.acessos?.[p];
   if(a===true)return true;
   if(!a?.acesso)return false;
@@ -1324,7 +1344,7 @@ function aplicarAcessos(){
   });
 
   $('usuarioAtual').textContent=atual.nome+' ('+atual.login+')';
-  $('perfilAtual').textContent=atual.perfil==='admin'?'Admin':'Usuário';
+  $('perfilAtual').textContent=atual.perfil==='admin'?'Admin':nomeNivel(atual.perfil);
 }
 
 /* ---------- Celular: menu lateral e tabelas em cartões ---------- */
@@ -1357,7 +1377,7 @@ function abrir(id){
   setTimeout(()=>$(id).classList.add('active'),10);
   document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('bg-slate-800',x.dataset.page===id));
   if(id==='dashboard'||id==='contratos')render();
-  if(id==='usuarios')renderUsuarios();
+  if(id==='usuarios'){renderUsuarios();if(atual?.perfil==='admin')carregarSenhas().then(renderUsuarios)}
   if(id==='externos')renderExternos();
   if(id==='aditivos')renderAditivos();
 }
@@ -2139,7 +2159,7 @@ function excluirCad(id){
 
 function matriz(ac={}){
   const acoes=['acesso','visualizar','criar','editar','excluir'];
-  $('matriz').innerHTML=perms.map(p=>{
+  $('matriz').innerHTML=perms.filter(p=>p!=='usuarios').map(p=>{
     const old=ac[p];
     const base=old===true?{acesso:true,visualizar:true,criar:true,editar:true,excluir:true}:(old||{});
     return `<div class="grid grid-cols-6 items-center py-3 border-b border-slate-100 last:border-b-0">
@@ -2181,56 +2201,105 @@ function matriz(ac={}){
   });
 }
 
+async function carregarSenhas(){
+  senhasUsuarios={};senhasStatus='';
+  if(atual?.perfil!=='admin')return;
+  const r=await sb.from('senhas_usuarios').select('id,senha,atualizado');
+  if(r.error){console.warn('Senhas indisponíveis:',r.error);senhasStatus='indisponivel';return}
+  (r.data||[]).forEach(x=>{senhasUsuarios[x.id]=x});
+}
+async function definirSenhaServidor(id,senha){
+  // Altera a senha de login do usuário e guarda a cópia visível ao Administrador (função segura no Supabase).
+  const {error}=await sb.rpc('definir_senha_usuario',{alvo:id,nova:senha});
+  if(error)throw error;
+  senhasUsuarios[id]={id,senha,atualizado:new Date().toISOString()};
+}
+async function registrarMinhaSenha(senha){
+  const {error}=await sb.rpc('registrar_minha_senha',{nova:senha});
+  if(error)console.warn('Não foi possível registrar a senha:',error);
+  else if(atual)senhasUsuarios[atual.id]={id:atual.id,senha,atualizado:new Date().toISOString()};
+}
+function celulaSenha(x){
+  if(atual?.perfil!=='admin')return '<span class="font-mono text-xs text-slate-600">••••••</span>';
+  if(senhasStatus==='indisponivel')return '<span class="text-xs text-amber-600" title="Execute o script SQL de níveis de acesso no Supabase.">Indisponível</span>';
+  const s=senhasUsuarios[x.id]?.senha;
+  if(!s)return '<span class="text-xs text-slate-400" title="A senha será registrada quando for definida ou alterada pelo sistema.">Não registrada</span>';
+  return `<span class="inline-flex items-center gap-2"><span class="font-mono text-xs text-slate-800 senha-valor" data-senha="${esc(s)}">••••••</span><button type="button" class="ver-senha text-[11px] font-bold text-blue-600 hover:text-blue-800" data-id="${esc(x.id)}">Mostrar</button></span>`;
+}
+function seloNivel(p){
+  const cls=p==='admin'?'bg-blue-50 text-blue-700 border border-blue-200':p==='master'?'bg-violet-50 text-violet-700 border border-violet-200':'bg-slate-100 text-slate-700';
+  return `<span class="px-2.5 py-1 rounded-full text-xs font-bold ${cls}">${nomeNivel(p)}</span>`;
+}
 function renderUsuarios(){
-  const editarPerm=pode('usuarios','editar');
-  const excluirPerm=pode('usuarios','excluir');
-  $('usuariosLista').innerHTML=usuarios.map(x=>`
+  const ordem={admin:0,master:1,usuario:2};
+  $('usuariosLista').innerHTML=[...usuarios].sort((a,b)=>(ordem[a.perfil]??2)-(ordem[b.perfil]??2)||String(a.nome).localeCompare(String(b.nome))).map(x=>{
+    const gerencia=podeGerenciar(x);
+    return `
     <tr class="hover:bg-slate-50/80 transition-colors">
       <td class="py-4 px-6 font-mono font-bold text-slate-800">${esc(x.login)}</td>
       <td class="py-4 px-6 font-bold text-slate-900">${esc(x.nome)}</td>
-      <td class="py-4 px-6"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${x.perfil==='admin'?'bg-blue-50 text-blue-700 border border-blue-200':'bg-slate-100 text-slate-700'}">${x.perfil==='admin'?'Administrador':'Usuário'}</span></td>
-      <td class="py-4 px-6 font-mono text-xs text-slate-600">••••••</td>
+      <td class="py-4 px-6">${seloNivel(x.perfil)}</td>
+      <td class="py-4 px-6">${celulaSenha(x)}</td>
       <td class="py-4 px-6 text-slate-600">${x.primeiro?'Sim':'Não'}</td>
       <td class="py-4 px-6">${x.perfil==='admin'||!x.trialFim?'<span class="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">Sem limite</span>':(trialExpirado(x)?'<span class="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full">Expirado</span>':`<span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">${diasRestantes(x)} dia(s) · até ${formatarData(x.trialFim)}</span>`)}</td>
       <td class="py-4 px-6 text-right space-x-2">
-        ${editarPerm?`<button class="text-slate-600 hover:text-slate-900 font-bold text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-all edit-user" data-id="${esc(x.id)}">Editar</button>`:''}
-        ${excluirPerm?`<button class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all delete-user" data-id="${esc(x.id)}">Excluir</button>`:''}
+        ${gerencia?`<button class="text-slate-600 hover:text-slate-900 font-bold text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-all edit-user" data-id="${esc(x.id)}">Editar</button>`:''}
+        ${gerencia&&x.id!==atual?.id?`<button class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all delete-user" data-id="${esc(x.id)}">Excluir</button>`:''}
+        ${!gerencia?'<span class="text-xs text-slate-400">Sem permissão</span>':''}
       </td>
-    </tr>
-  `).join('');
+    </tr>`}).join('');
 }
-
+function configurarCampoPerfil(valor){
+  const sel=$('uperfil'),admin=atual?.perfil==='admin';
+  [...sel.options].forEach(o=>{o.disabled=!admin&&o.value!=='usuario';o.hidden=!admin&&o.value!=='usuario'});
+  sel.value=admin?(valor||'usuario'):'usuario';
+  sel.disabled=!admin;
+  atualizarAjudaPerfil();
+}
+function atualizarAjudaPerfil(){
+  const v=$('uperfil').value,txt={
+    admin:'Administrador: acesso total ao sistema, gerencia todos os usuários e vê as senhas.',
+    master:'Master: acessa "Usuários e Acessos", mas só cadastra, edita e exclui usuários de nível Usuário. Demais módulos conforme a matriz abaixo.',
+    usuario:'Usuário: não acessa "Usuários e Acessos". Demais módulos conforme a matriz abaixo.'}[v]||'';
+  $('uperfilAjuda').textContent=txt+(atual?.perfil!=='admin'?' (Como Master, você só pode cadastrar usuários de nível Usuário.)':'');
+  const m=$('matriz')?.closest('.md\\:col-span-2');if(m)m.style.display=v==='admin'?'none':'';
+}
 function novoUsuario(){
   if(!pode('usuarios','criar'))return toast('Você não possui permissão para criar usuários.');
   ['uid','unome','ulogin','usenha'].forEach(x=>$(x).value='');
-  $('uperfil').value='usuario';
+  configurarCampoPerfil('usuario');
   preencherTesteUsuario({perfil:'usuario',trialDias:30,trialFim:'x'});
   $('utesteSemLimite').checked=false;
-  $('utesteDias').disabled=false;
+  $('utesteDias').disabled=atual?.perfil!=='admin';
   $('usuarioFormTitulo').textContent='Novo Usuário';
   matriz({});
+  atualizarAjudaPerfil();
   abrir('usuarioForm');
 }
-
 function editarUsuario(id){
   if(!pode('usuarios','editar'))return toast('Você não possui permissão para editar usuários.');
   let x=usuarios.find(a=>a.id===id);
   if(!x)return;
+  if(!podeGerenciar(x))return toast('O nível Master só pode editar usuários de nível Usuário.');
   $('uid').value=x.id;
   $('unome').value=x.nome;
   $('ulogin').value=x.login;
   $('usenha').value='';
-  $('uperfil').value=x.perfil;
+  configurarCampoPerfil(x.perfil);
   preencherTesteUsuario(x);
   $('usuarioFormTitulo').textContent='Editar Usuário';
   matriz(x.acessos||{});
+  atualizarAjudaPerfil();
   abrir('usuarioForm');
 }
-
 async function salvarUsuario(){
   const editando=!!$('uid').value;
   if(!pode('usuarios',editando?'editar':'criar'))return toast('Você não possui permissão para '+(editando?'editar':'criar')+' usuários.');
   let id=$('uid').value||Date.now().toString(),old=usuarios.find(x=>x.id===id),login=$('ulogin').value.trim();
+  const perfil=atual?.perfil==='admin'?$('uperfil').value:'usuario';
+  if(old&&!podeGerenciar(old))return toast('O nível Master só pode editar usuários de nível Usuário.');
+  if(!podeGerenciar({perfil}))return toast('O nível Master só pode cadastrar usuários de nível Usuário.');
+  if(old&&old.id===atual.id&&old.perfil==='admin'&&perfil!=='admin'&&usuarios.filter(u=>u.perfil==='admin').length<=1)return toast('É necessário manter pelo menos um Administrador.');
   if(!$('unome').value.trim()||!login)return toast('Preencha o nome e o login.');
   if(usuarios.some(x=>x.login===login&&x.id!==id))return toast('Este nome de usuário já está em uso.');
   let ac={};
@@ -2238,10 +2307,14 @@ async function salvarUsuario(){
     ac[p]={};
     document.querySelectorAll(`[data-access="${p}"]`).forEach(cb=>ac[p][cb.dataset.action]=cb.checked);
   });
+  // Acesso a "Usuários e Acessos" é definido pelo nível, não pela matriz.
+  const tudo={acesso:true,visualizar:true,criar:true,editar:true,excluir:true},nada={acesso:false,visualizar:false,criar:false,editar:false,excluir:false};
+  ac.usuarios=perfil==='usuario'?nada:tudo;
   let trialInicio=old?.trialInicio||null;
   let trialFim=old?.trialFim||null;
   let trialDias=old?.trialDias||30;
-  if(atual?.perfil==='admin' && $('uperfil').value!=='admin'){
+  if(!old&&atual?.perfil!=='admin'){trialInicio=new Date().toISOString();const fim=new Date();fim.setDate(fim.getDate()+30);trialFim=fim.toISOString();trialDias=30}
+  if(atual?.perfil==='admin' && perfil!=='admin'){
     const semLimite=$('utesteSemLimite').checked;
     if(semLimite){
       trialInicio=null; trialFim=null; trialDias=null;
@@ -2257,30 +2330,41 @@ async function salvarUsuario(){
     }
   }
   const senhaNova=$('usenha').value;
+  if(senhaNova&&senhaNova.length<6)return toast('A senha deve ter pelo menos 6 caracteres.');
   if(!old){
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(login))return toast('O login deve ser um e-mail válido.');
     if(senhaNova.length<6)return toast('Informe uma senha provisória com pelo menos 6 caracteres.');
     const novoId=await criarUsuarioAuth(login,senhaNova,$('unome').value.trim());
     if(!novoId)return;
     id=novoId;
+    try{await definirSenhaServidor(id,senhaNova)}catch(e){console.warn('Senha não registrada:',e)}
   }else if(senhaNova){
-    if(id===atual.id){const {error}=await sb.auth.updateUser({password:senhaNova});if(error)return toast('Não foi possível alterar a senha: '+traduzErro(error));}
-    else toast('A senha de outros usuários é redefinida no painel do Supabase (Authentication > Users).');
+    if(id===atual.id){
+      const {error}=await sb.auth.updateUser({password:senhaNova});
+      if(error)return toast('Não foi possível alterar a senha: '+traduzErro(error));
+      await registrarMinhaSenha(senhaNova);
+    }else{
+      try{await definirSenhaServidor(id,senhaNova)}
+      catch(e){return toast('Não foi possível alterar a senha: '+traduzErro(e)+'. Verifique se o script SQL de níveis de acesso foi executado no Supabase.')}
+    }
   }
-  let x={id,nome:$('unome').value.trim(),login,perfil:$('uperfil').value,primeiro:old?old.primeiro:true,acessos:ac,trialInicio,trialFim,trialDias};
-  if(x.perfil==='admin'){x.acessos=Object.fromEntries(perms.map(p=>[p,{acesso:true,visualizar:true,criar:true,editar:true,excluir:true}]));x.trialInicio=null;x.trialFim=null;x.trialDias=null;}
+  let x={id,nome:$('unome').value.trim(),login,perfil,primeiro:old?(senhaNova&&id!==atual.id?true:old.primeiro):true,acessos:ac,trialInicio,trialFim,trialDias};
+  if(x.perfil==='admin'){x.acessos=Object.fromEntries(perms.map(p=>[p,{...tudo}]));x.trialInicio=null;x.trialFim=null;x.trialDias=null;}
   let i=usuarios.findIndex(a=>a.id===id);
   i<0?usuarios.push(x):usuarios[i]=x;
+  if(x.id===atual.id){atual=x;aplicarAcessos()}
   save();
   toast('Usuário salvo com sucesso.');
-  abrir('usuarios');
+  abrir(pode('usuarios')?'usuarios':(perms.find(p=>permitido(p))||'dashboard'));
 }
-
 function excluirUsuario(id){
   if(!pode('usuarios','excluir'))return toast('Você não possui permissão para excluir usuários.');
   if(id===atual.id)return toast('Não é permitido excluir o usuário conectado.');
+  const alvo=usuarios.find(x=>x.id===id);
+  if(!podeGerenciar(alvo))return toast('O nível Master só pode excluir usuários de nível Usuário.');
   if(confirm('Tem certeza que deseja excluir este usuário?')){
     usuarios=usuarios.filter(x=>x.id!==id);
+    delete senhasUsuarios[id];
     save();
     renderUsuarios();
     toast('Usuário excluído.');
@@ -2312,6 +2396,7 @@ async function iniciarSessao(user){
   if(trialExpirado(u)){await sb.auth.signOut();return erro('O período de teste deste usuário terminou. Solicite ao administrador a renovação ou liberação do acesso.')}
   $('loginError').style.display='none';
   atual=u;
+  await carregarSenhas();
   $('login').style.display='none';
   $('app').style.display='flex';
   aplicarAcessos();
@@ -2369,6 +2454,7 @@ async function alterarPrimeiraSenha(){
   const {error}=await sb.auth.updateUser({password:a});
   if(error){$('senhaError').textContent=traduzErro(error);$('senhaError').style.display='block';return;}
   await sb.rpc('concluir_primeiro_acesso');
+  await registrarMinhaSenha(a);
   atual.primeiro=false;
   usuarios=usuarios.map(x=>x.id===atual.id?atual:x);
   atualizarAvisoPeriodoTeste();
@@ -2432,12 +2518,13 @@ document.addEventListener('click',e=>{
   btn=e.target.closest('#salvarCad');if(btn){salvarCad();return;}
   btn=e.target.closest('#voltarCad');if(btn){cadastro(cadTipo);return;}
   btn=e.target.closest('#cancelCad');if(btn){cadastro(cadTipo);return;}
+  btn=e.target.closest('.ver-senha');if(btn){const v=btn.parentElement.querySelector('.senha-valor'),mostrar=btn.textContent==='Mostrar';v.textContent=mostrar?v.dataset.senha:'••••••';btn.textContent=mostrar?'Ocultar':'Mostrar';return;}
   btn=e.target.closest('#novoUsuario');if(btn){novoUsuario();return;}
   btn=e.target.closest('#salvarUsuario');if(btn){salvarUsuario();return;}
   btn=e.target.closest('#alterarPrimeiraSenha');if(btn){alterarPrimeiraSenha();return;}
   btn=e.target.closest('#sair');if(btn){
     sb.auth.signOut();
-    atual=null;
+    atual=null;senhasUsuarios={};senhasStatus='';
     $('app').style.display='none';
     $('senhaOverlay').classList.add('opacity-0','pointer-events-none');
     $('overlay').classList.add('opacity-0','pointer-events-none');
@@ -2481,7 +2568,7 @@ $('valor').addEventListener('blur',()=>{$('valor').value=moeda($('valor').value)
 ['inicio','fim'].forEach(id=>$(id).addEventListener('blur',()=>{let v=dataISO($(id).value);if(v!==null)$(id).value=dataBR(v);atualizarClausulas()}));
 ['aditData','aditNovaVigenciaFim'].forEach(id=>$(id).addEventListener('blur',()=>{let v=dataISO($(id).value);if(v!==null)$(id).value=dataBR(v)}));
 $('aditNovoValor').addEventListener('blur',()=>{if($('aditNovoValor').value.trim())$('aditNovoValor').value=moeda($('aditNovoValor').value)});
-$('uperfil').addEventListener('change',atualizarCampoTeste);
+$('uperfil').addEventListener('change',()=>{atualizarCampoTeste();atualizarAjudaPerfil()});
 $('utesteSemLimite').addEventListener('change',atualizarCampoTeste);
 $('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('confSenha').addEventListener('keydown',e=>{if(e.key==='Enter')alterarPrimeiraSenha()});
