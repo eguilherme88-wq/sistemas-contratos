@@ -1210,7 +1210,8 @@ function toast(t){
   const el=$('toast');
   $('toastText').textContent=t;
   el.classList.remove('translate-y-20','opacity-0');
-  setTimeout(()=>el.classList.add('translate-y-20','opacity-0'),2800);
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>el.classList.add('translate-y-20','opacity-0'),Math.max(2800,Math.min(12000,String(t).length*70)));
 }
 
 function trialExpirado(u){
@@ -1489,17 +1490,42 @@ function atualizarPainelAssinatura(x={}){
   const bx=$('baixarAssinado');bx.classList.toggle('hidden',!x.autentiqueAssinadoUrl);if(x.autentiqueAssinadoUrl)bx.dataset.url=x.autentiqueAssinadoUrl;else delete bx.dataset.url;
   $('enviarAutentique').textContent=x.autentiqueId?'✉ Reenviar como novo documento':'✉ Enviar para assinatura no Autentique';
 }
+function comPrazo(promessa,ms,msg){let t;return Promise.race([promessa,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error(msg)),ms)})]).finally(()=>clearTimeout(t))}
+function tokenSalvoSupabase(){try{const ref=new URL(SUPABASE_URL).hostname.split('.')[0],v=JSON.parse(localStorage.getItem('sb-'+ref+'-auth-token')||'null');return v?.access_token||v?.currentSession?.access_token||''}catch(e){return ''}}
+async function tokenDaSessao(){
+  // getSession() do supabase-js pode ficar travado (bloqueio interno de sessão, comum após a aba ficar em segundo plano).
+  // Por isso há prazo máximo e, se travar, usa o token já salvo no navegador.
+  let token='';
+  try{
+    let {data}=await comPrazo(sb.auth.getSession(),8000,'sessão travada');let s=data?.session;
+    if(s?.expires_at&&s.expires_at*1000<Date.now()+60000){const r=await comPrazo(sb.auth.refreshSession(),10000,'renovação travada');s=r?.data?.session||s}
+    token=s?.access_token||'';
+  }catch(e){console.warn('Autentique: sessão não respondeu, usando token salvo.',e)}
+  return token||tokenSalvoSupabase();
+}
 async function chamarAutentique(caminho,opcoes={},ids={endpoint:'autentiqueEndpoint',chave:'autentiqueChave'}){
   const base=normalizarBaseAutentique($(ids.endpoint).value);localStorage.setItem('autentiqueEndpoint',base);
   const chave=$(ids.chave).value.trim();if(chave)localStorage.setItem('autentiqueChave',chave);else localStorage.removeItem('autentiqueChave');
-  let r;
-  let extra={};if(/\/functions\/v1\//.test(base)){const {data:{session}}=await sb.auth.getSession();extra={Authorization:'Bearer '+(session?.access_token||''),apikey:SUPABASE_KEY}}
-  try{r=await fetch(base+caminho,{...opcoes,headers:{'Content-Type':'application/json',...extra,...(chave?{'X-Integracao-Chave':chave}:{})}})}
-  catch(e){throw new Error('servidor de integração inacessível em '+base+'. Verifique se a função "autentique" foi publicada no Supabase.')}
-  const data=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(data.erro||data.message||('HTTP '+r.status));
+  let extra={};
+  if(/\/functions\/v1\//.test(base)){const token=await tokenDaSessao();if(!token)throw new Error('sessão expirada. Saia e entre novamente no sistema.');extra={Authorization:'Bearer '+token,apikey:SUPABASE_KEY}}
+  const LIMITE=120000,ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),LIMITE);let r;
+  try{r=await fetch(base+caminho,{...opcoes,signal:ctrl.signal,headers:{'Content-Type':'application/json',...extra,...(chave?{'X-Integracao-Chave':chave}:{})}})}
+  catch(e){if(e.name==='AbortError')throw new Error('o servidor de integração não respondeu em '+(LIMITE/1000)+' segundos. Verifique os logs da função "autentique" no Supabase (Edge Functions → autentique → Logs).');throw new Error('servidor de integração inacessível em '+base+'. Verifique sua conexão e se a função "autentique" foi publicada no Supabase.')}
+  finally{clearTimeout(timer)}
+  const bruto=await r.text().catch(()=>'');let data={};try{data=bruto?JSON.parse(bruto):{}}catch(e){data={erro:bruto.slice(0,300)}}
+  if(!r.ok){
+    const det=data.erro||data.error||data.message||data.msg||'';
+    if(r.status===401)throw new Error('acesso negado pelo servidor (401). '+(det||'Sua sessão pode ter expirado: saia e entre novamente.'));
+    if(r.status===403)throw new Error('sem permissão no servidor (403). '+(det||'Confira a chave do servidor.'));
+    if(r.status===404)throw new Error('função "autentique" ou rota '+caminho+' não encontrada (404). '+det);
+    if(r.status===413)throw new Error('o PDF ficou grande demais para envio (413). Reduza o tamanho do logotipo.');
+    if([502,503,504,546].includes(r.status))throw new Error('a função do servidor excedeu o tempo ou falhou ('+r.status+'). '+(det||'Verifique os logs da função "autentique" no Supabase.'));
+    throw new Error(det||('HTTP '+r.status));
+  }
+  if(!data.id&&opcoes.method==='POST')throw new Error('o servidor respondeu, mas não devolveu o identificador do documento no Autentique. '+(data.erro||''));
   return data;
 }
+function contadorEnvio(idStatus,texto){const ini=Date.now(),el=$(idStatus);el.textContent=texto+'...';const t=setInterval(()=>{el.textContent=texto+'... '+Math.round((Date.now()-ini)/1000)+'s'},1000);return ()=>clearInterval(t)}
 function mesclarSignatarios(locais,remotos=[]){return locais.map(s=>{const r=remotos.find(a=>String(a.email||'').toLowerCase()===String(s.email||'').toLowerCase());return r?{...s,publicId:r.publicId||s.publicId||'',link:r.link||s.link||'',status:r.status||s.status,assinadoEm:r.assinadoEm||''}:s})}
 function resumoAssinaturas(lista=[]){const total=lista.length,feitas=lista.filter(s=>s.status==='Assinado').length,recusa=lista.find(s=>s.status==='Recusado');if(recusa)return 'Recusado por '+recusa.nome;if(total&&feitas===total)return 'Assinado por todos';return `${feitas} de ${total} assinaturas`}
 function aplicarAssinaturaNaTela(c){if($('id').value!==c.id)return;montarSignatarios(c.signatarios||[]);atualizarPainelAssinatura(c);$('status').value=c.status}
@@ -1518,20 +1544,20 @@ async function enviarAutentique(){
   try{
     $('assinaturaStatus').textContent='Gerando PDF...';
     const pdfBase64=await gerarPdfContrato(contrato);
-    $('assinaturaStatus').textContent='Enviando ao Autentique...';
-    const data=await chamarAutentique('/documentos',{method:'POST',body:JSON.stringify({
+    const parar=contadorEnvio('assinaturaStatus','Enviando ao Autentique');let data;
+    try{data=await chamarAutentique('/documentos',{method:'POST',body:JSON.stringify({
       nome:[contrato.numero,contrato.nome].filter(Boolean).join(' — '),
       arquivoNome:(contrato.numero||'contrato')+'.pdf',
       pdfBase64,
       signatarios:contrato.signatarios.map(s=>({nome:s.nome,email:s.email,papel:s.papel}))
-    })});
+    })})}finally{parar()}
     contrato.autentiqueId=data.id;contrato.autentiqueUrl=data.url||'';contrato.autentiqueAssinadoUrl='';contrato.autentiqueEnviadoEm=Date.now();
     contrato.signatarios=mesclarSignatarios(contrato.signatarios,data.signatarios);
     contrato.assinaturaStatus=resumoAssinaturas(contrato.signatarios);
     contrato.status='Aguardando Assinaturas';contrato.atualizado=Date.now();
     save();aplicarAssinaturaNaTela(contrato);render();
     toast(data.sandbox?'Documento de TESTE (sandbox) criado no Autentique.':'Enviado ao Autentique. Os signatários receberão o convite por e-mail.');
-  }catch(err){$('assinaturaStatus').textContent='Falha no envio';toast('Não foi possível enviar: '+err.message)}
+  }catch(err){console.error('Autentique:',err);$('assinaturaStatus').textContent='Falha no envio';$('assinaturaStatus').title=err.message;toast('Não foi possível enviar: '+err.message)}
   finally{botao.disabled=false}
 }
 
@@ -1839,20 +1865,20 @@ async function enviarAditivoAutentique(){
   try{
     $('adtAssinaturaStatus').textContent='Gerando PDF...';
     const pdfBase64=await gerarPdfAditivo(c,aditivo);
-    $('adtAssinaturaStatus').textContent='Enviando ao Autentique...';
-    const data=await chamarAutentique('/documentos',{method:'POST',body:JSON.stringify({
+    const parar=contadorEnvio('adtAssinaturaStatus','Enviando ao Autentique');let data;
+    try{data=await chamarAutentique('/documentos',{method:'POST',body:JSON.stringify({
       nome:[aditivo.numero,'Aditivo ao contrato',c.numero].filter(Boolean).join(' — '),
       arquivoNome:(aditivo.numero||'aditivo')+'.pdf',
       pdfBase64,
       signatarios:aditivo.signatarios.map(s=>({nome:s.nome,email:s.email,papel:s.papel}))
-    })},idsAditivo);
+    })},idsAditivo)}finally{parar()}
     aditivo.autentiqueId=data.id;aditivo.autentiqueUrl=data.url||'';aditivo.autentiqueAssinadoUrl='';aditivo.autentiqueEnviadoEm=Date.now();
     aditivo.signatarios=mesclarSignatarios(aditivo.signatarios,data.signatarios);
     aditivo.assinaturaStatus=resumoAssinaturas(aditivo.signatarios);
     aditivo.status='Aguardando Assinaturas';aditivo.atualizado=Date.now();c.atualizado=Date.now();
     save();aplicarAssinaturaAditivoNaTela(aditivo);renderAditivos();
     toast(data.sandbox?'Aditivo de TESTE (sandbox) criado no Autentique.':'Aditivo enviado ao Autentique. Os signatários receberão o convite por e-mail.');
-  }catch(err){$('adtAssinaturaStatus').textContent='Falha no envio';toast('Não foi possível enviar: '+err.message)}
+  }catch(err){console.error('Autentique:',err);$('adtAssinaturaStatus').textContent='Falha no envio';$('adtAssinaturaStatus').title=err.message;toast('Não foi possível enviar: '+err.message)}
   finally{botao.disabled=false}
 }
 async function consultarAditivoAutentique(silencioso=false){
