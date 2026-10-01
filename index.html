@@ -314,6 +314,23 @@
   html.dark .text-violet-700{color:#c4b5fd !important}
   html.dark .border-violet-200{border-color:rgba(139,92,246,.45) !important}
   html.dark .text-amber-600{color:#fbbf24 !important}
+  /* Painel "Período de Teste" (formulário de usuário) */
+  .painel-teste{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fcd34d}
+  .painel-teste-icone{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:#fde68a}
+  .painel-teste-titulo{color:#92400e}
+  .painel-teste-texto{color:#a16207}
+  .painel-teste-dias{background:#fff;border:1px solid #fcd34d;color:#78350f}
+  .painel-teste-opcao{background:#fff;border:1px solid #fcd34d;color:#78350f;align-self:center;height:auto}
+  html.dark .painel-teste{background:linear-gradient(135deg,rgba(245,158,11,.10),rgba(245,158,11,.04));border-color:rgba(245,158,11,.35)}
+  html.dark .painel-teste-icone{background:rgba(245,158,11,.18)}
+  html.dark .painel-teste-titulo{color:#fcd34d}
+  html.dark .painel-teste-texto{color:#d6c08a}
+  html.dark .painel-teste-dias:not(#_c){background-color:#0f1a2b !important;border-color:rgba(245,158,11,.45) !important;color:#fef3c7 !important;-webkit-text-fill-color:#fef3c7}
+  html.dark .painel-teste-dias:not(#_c):disabled{opacity:.55}
+  html.dark .painel-teste-opcao{background:#0f1a2b;border-color:rgba(245,158,11,.35);color:#fde68a}
+  /* selo de dias de teste na lista de usuários */
+  .selo-teste{display:inline-block;white-space:nowrap}
+  html.dark .selo-teste-data{color:#94a3b8}
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
@@ -882,7 +899,7 @@
                 <th class="py-3.5 px-6">Perfil</th>
                 <th class="py-3.5 px-6">Senha Atual</th>
                 <th class="py-3.5 px-6">Primeiro Acesso</th>
-                <th class="py-3.5 px-6">Teste</th>
+                <th class="py-3.5 px-6 col-teste">Teste</th>
                 <th class="py-3.5 px-6 text-right">Ações</th>
               </tr>
             </thead>
@@ -926,18 +943,19 @@
             </select>
             <p class="text-xs text-slate-500 mt-2" id="uperfilAjuda"></p>
           </div>
-          <div class="md:col-span-2 bg-amber-50/60 border border-amber-200 rounded-2xl p-5">
-            <div class="flex flex-col md:flex-row md:items-end gap-4">
+          <div class="md:col-span-2 painel-teste rounded-2xl p-5" id="painelTeste">
+            <div class="flex flex-col md:flex-row md:items-center gap-5">
+              <div class="painel-teste-icone shrink-0" aria-hidden="true">⏳</div>
               <div class="flex-1">
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Período de Teste</label>
+                <label class="painel-teste-titulo block text-xs font-bold uppercase tracking-wider mb-1" for="utesteDias">Período de Teste</label>
+                <p class="painel-teste-texto text-xs mb-3">Defina por quanto tempo este usuário poderá acessar o sistema.</p>
                 <div class="flex items-center gap-3">
-                  <input class="w-32 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800" id="utesteDias" type="number" min="1" max="3650" value="30">
-                  <span class="text-sm text-slate-500">dias</span>
+                  <input class="painel-teste-dias w-28 rounded-xl px-4 py-2.5 text-sm font-bold" id="utesteDias" type="number" min="1" max="3650" value="30">
+                  <span class="painel-teste-texto text-sm font-semibold">dias</span>
                 </div>
-                <p class="text-xs text-slate-500 mt-2">Defina individualmente por quanto tempo este usuário poderá acessar o sistema.</p>
               </div>
-              <label class="flex items-center gap-2 text-xs font-bold text-slate-600 pb-3">
-                <input id="utesteSemLimite" type="checkbox" class="w-4 h-4 rounded accent-blue-600">
+              <label class="painel-teste-opcao flex items-center gap-2.5 text-sm font-semibold rounded-xl px-4 py-3 cursor-pointer select-none">
+                <input id="utesteSemLimite" type="checkbox" class="w-4 h-4 rounded accent-emerald-500 cursor-pointer">
                 Sem limite de acesso
               </label>
             </div>
@@ -2231,8 +2249,10 @@ function seloNivel(p){
   return `<span class="px-2.5 py-1 rounded-full text-xs font-bold ${cls}">${nomeNivel(p)}</span>`;
 }
 function renderUsuarios(){
-  const ordem={admin:0,master:1,usuario:2};
-  $('usuariosLista').innerHTML=[...usuarios].sort((a,b)=>(ordem[a.perfil]??2)-(ordem[b.perfil]??2)||String(a.nome).localeCompare(String(b.nome))).map(x=>{
+  const ordem={admin:0,master:1,usuario:2},verTeste=atual?.perfil==='admin';
+  document.querySelectorAll('th.col-teste').forEach(th=>th.style.display=verTeste?'':'none');
+  const visiveis=atual?.perfil==='admin'?usuarios:usuarios.filter(x=>x.perfil!=='admin');
+  $('usuariosLista').innerHTML=[...visiveis].sort((a,b)=>(ordem[a.perfil]??2)-(ordem[b.perfil]??2)||String(a.nome).localeCompare(String(b.nome))).map(x=>{
     const gerencia=podeGerenciar(x);
     return `
     <tr class="hover:bg-slate-50/80 transition-colors">
@@ -2241,7 +2261,7 @@ function renderUsuarios(){
       <td class="py-4 px-6">${seloNivel(x.perfil)}</td>
       <td class="py-4 px-6">${celulaSenha(x)}</td>
       <td class="py-4 px-6 text-slate-600">${x.primeiro?'Sim':'Não'}</td>
-      <td class="py-4 px-6">${x.perfil==='admin'||!x.trialFim?'<span class="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">Sem limite</span>':(trialExpirado(x)?'<span class="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full">Expirado</span>':`<span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">${diasRestantes(x)} dia(s) · até ${formatarData(x.trialFim)}</span>`)}</td>
+      ${verTeste?`<td class="py-4 px-6 col-teste">${x.perfil==='admin'||!x.trialFim?'<span class="selo-teste text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">Sem limite</span>':(trialExpirado(x)?'<span class="selo-teste text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full">Expirado</span>':`<span class="selo-teste text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">${diasRestantes(x)} ${diasRestantes(x)===1?'dia':'dias'}</span><div class="selo-teste-data text-[11px] text-slate-500 mt-1 whitespace-nowrap">até ${formatarData(x.trialFim)}</div>`)}</td>`:''}
       <td class="py-4 px-6 text-right space-x-2">
         ${gerencia?`<button class="text-slate-600 hover:text-slate-900 font-bold text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-all edit-user" data-id="${esc(x.id)}">Editar</button>`:''}
         ${gerencia&&x.id!==atual?.id?`<button class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all delete-user" data-id="${esc(x.id)}">Excluir</button>`:''}
@@ -2263,6 +2283,7 @@ function atualizarAjudaPerfil(){
     usuario:'Usuário: não acessa "Usuários e Acessos". Demais módulos conforme a matriz abaixo.'}[v]||'';
   $('uperfilAjuda').textContent=txt+(atual?.perfil!=='admin'?' (Como Master, você só pode cadastrar usuários de nível Usuário.)':'');
   const m=$('matriz')?.closest('.md\\:col-span-2');if(m)m.style.display=v==='admin'?'none':'';
+  $('painelTeste').style.display=atual?.perfil==='admin'&&v!=='admin'?'':'none';
 }
 function novoUsuario(){
   if(!pode('usuarios','criar'))return toast('Você não possui permissão para criar usuários.');
