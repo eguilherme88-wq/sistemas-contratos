@@ -26,12 +26,29 @@ Todos os repositórios publicados em `<usuario>.github.io` dividem o mesmo domí
 | Identidade do app (`id` do manifesto) | `./?app=partner-contratos`, vinculado à pasta do repositório |
 | Escopo do app e do service worker | `./`, ou seja, só a pasta deste repositório |
 | Cache | prefixo `partner-contratos-`; o service worker só apaga os próprios caches |
-| Requisições externas (Supabase, CDNs) | não são interceptadas |
+| Requisições externas (Firebase, CDNs) | não são interceptadas |
 | Janela | `launch_handler` reaproveita a janela já aberta do Partner, sem abrir duplicadas |
 
 ## Atualizar o app
 
 Ao publicar uma nova versão do `index.html`, os apps instalados já recebem a página nova (a página é buscada primeiro na rede). Se trocar ícones, aumente `VERSAO` em `sw.js` (ex.: `v2`).
+
+## Banco de dados (Firebase)
+
+Os dados ficam no projeto Firebase `partner-contratos` (plano gratuito Spark):
+
+- **Login**: Firebase Authentication, por e-mail e senha.
+- **Dados**: Cloud Firestore (`contratos`, `contratosExternos`, `partes`, `tiposServico`, `perfis`, `senhas`, `config`).
+- **Arquivos dos contratos externos**: guardados no próprio Firestore, em partes de 700 KB (`arquivos`), porque o Storage exige o plano pago.
+- **Regras de acesso**: `firestore.rules` (publicar em Firestore → Regras sempre que mudar).
+
+No primeiro acesso, se ainda não houver administrador, a tela de login oferece criar a conta de administrador e copiar os dados do sistema antigo (Supabase). A cópia também pode ser feita depois em **Usuários → Importar do sistema antigo**.
+
+Limitações do plano gratuito:
+
+- **Assinatura no Autentique** precisa de um servidor de integração próprio (campo "Servidor de integração"); sem ele, o envio fica desativado.
+- O administrador **não define a senha de outro usuário**: o sistema envia um e-mail de redefinição para o próprio usuário.
+- Ao excluir um usuário, o perfil é removido (ele perde o acesso), mas a conta de login continua listada em Authentication no console do Firebase.
 
 ## Estrutura
 
@@ -39,5 +56,6 @@ Ao publicar uma nova versão do `index.html`, os apps instalados já recebem a p
 index.html              sistema
 manifest.webmanifest    dados do aplicativo (nome, ícones, cores, escopo)
 sw.js                   service worker (instalação e uso sem conexão da tela inicial)
+firestore.rules         regras de acesso do banco Firestore
 icons/                  ícones 32, 180, 192, 512 e versões "maskable"
 ```

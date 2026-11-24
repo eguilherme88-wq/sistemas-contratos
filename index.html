@@ -16,7 +16,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -713,7 +715,7 @@
         <div class="border-t border-slate-200 pt-7 space-y-5">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-slate-900">Assinatura Eletrônica — Autentique</h3><p class="text-xs text-slate-500 mt-1">Os dados de contratante e contratada são preenchidos automaticamente a partir dos cadastros. Ao enviar, o contrato é salvo, convertido em PDF e enviado ao Autentique, que dispara o convite de assinatura por e-mail a cada signatário.</p></div><button type="button" id="addSignatario" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold px-4 py-2.5 rounded-xl text-xs">＋ Adicionar signatário</button></div>
           <div id="signatarios" class="space-y-3"></div>
-          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4"><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2" for="autentiqueEndpoint">Servidor de integração</label><input id="autentiqueEndpoint" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="/api/autentique"></div><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2" for="autentiqueChave">Chave do servidor (se houver)</label><input id="autentiqueChave" type="password" autocomplete="off" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="INTEGRACAO_CHAVE"></div><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Situação</label><div id="assinaturaStatus" class="bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-600">Não enviado</div></div><p class="md:col-span-3 text-xs text-slate-500">O token da API do Autentique fica apenas no servidor (função segura no Supabase), nunca neste navegador.</p></div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4"><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2" for="autentiqueEndpoint">Servidor de integração</label><input id="autentiqueEndpoint" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="/api/autentique"></div><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2" for="autentiqueChave">Chave do servidor (se houver)</label><input id="autentiqueChave" type="password" autocomplete="off" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="INTEGRACAO_CHAVE"></div><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Situação</label><div id="assinaturaStatus" class="bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-600">Não enviado</div></div><p class="md:col-span-3 text-xs text-slate-500">O token da API do Autentique fica apenas no servidor de integração, nunca neste navegador. Sem servidor configurado, o envio para assinatura fica desativado.</p></div>
           <div class="flex flex-wrap justify-end gap-3"><button type="button" id="atualizarAutentique" class="hidden bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-5 py-3 rounded-xl text-sm disabled:opacity-50">↻ Atualizar status</button><button type="button" id="baixarAssinado" class="hidden bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold px-5 py-3 rounded-xl text-sm">Baixar PDF assinado</button><button type="button" id="abrirAutentique" class="hidden bg-slate-900 hover:bg-slate-800 text-white font-bold px-5 py-3 rounded-xl text-sm">Abrir no Autentique ↗</button><button type="button" id="enviarAutentique" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl text-sm shadow-md disabled:opacity-50">✉ Enviar para assinatura no Autentique</button></div>
         </div>
 
@@ -903,6 +905,7 @@
           <p class="text-sm text-slate-500 mt-0.5">Cadastre operadores e defina permissões granulares por seção.</p>
         </div>
         <button class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-5 py-3 rounded-xl shadow-md transition-all" id="novoUsuario">＋ Novo Usuário</button>
+        <button class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-5 py-3 rounded-xl text-sm transition-all" id="importarSupabase" style="display:none">⇪ Importar do sistema antigo</button>
       </div>
 
 
@@ -1118,148 +1121,193 @@ usuarios=usuarios.map(x=>{
 let atual=null,cadTipo='contratantes',contratoAditivoAtual=null;
 let senhasUsuarios={},senhasStatus='';
 
-// ======================= SUPABASE =======================
+// ======================= FIREBASE =======================
+const firebaseConfig={
+  apiKey:"AIzaSyCn8SJJ6li06ZDJdXQTI_gS5vLCph5RN4o",
+  authDomain:"partner-contratos.firebaseapp.com",
+  projectId:"partner-contratos",
+  storageBucket:"partner-contratos.firebasestorage.app",
+  messagingSenderId:"695130651026",
+  appId:"1:695130651026:web:5f5ce905e3dae38354e94b"
+};
+firebase.initializeApp(firebaseConfig);
+const fauth=firebase.auth(),fdb=firebase.firestore();
+// Dados antigos (só para a importação única a partir do Supabase)
 const SUPABASE_URL='https://arulbvghzjzjtrxwsepk.supabase.co';
 const SUPABASE_KEY='sb_publishable_ogpIz86r1buwbt3ZJENa0Q_dSXTsFbT';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const BUCKET_EXTERNOS='contratos-externos';
+const ACESSO_TOTAL=()=>Object.fromEntries(perms.map(p=>[p,{acesso:true,visualizar:true,criar:true,editar:true,excluir:true}]));
 
-// Mapeamento: [campo no sistema, coluna no banco, tipo]
+// Cada coleção do Firestore guarda os objetos do sistema como estão.
+function docsAtuais(){
+  const L={contratos:new Map(),contratosExternos:new Map(),partes:new Map(),tiposServico:new Map(),perfis:new Map()};
+  const add=(t,o)=>{if(o&&o.id!=null&&String(o.id)!=='')L[t].set(String(o.id),JSON.stringify(o))};
+  contratos.forEach(c=>add('contratos',c));
+  contratosExternos.forEach(x=>add('contratosExternos',x));
+  (cad.contratantes||[]).forEach(x=>add('partes',{...x,tipo:'contratante'}));
+  (cad.contratados||[]).forEach(x=>add('partes',{...x,tipo:'contratado'}));
+  (cad.tipos||[]).forEach(x=>add('tiposServico',x));
+  usuarios.forEach(x=>add('perfis',x));
+  return L;
+}
+// Espelho do que já está no banco, para enviar só o que mudou
+let espelho={},espelhoModelo='';
+function tirarFoto(){espelho=docsAtuais();espelhoModelo=JSON.stringify(modelo)}
+function msgErro(e){return traduzErro(e)}
+function traduzErro(e){
+  const c=String(e?.code||''),m=String(e?.message||e||'Erro desconhecido');
+  if(/invalid-credential|wrong-password|user-not-found|invalid-login-credentials/i.test(c+m))return 'E-mail ou senha inválidos. Verifique suas credenciais.';
+  if(/invalid-email/.test(c))return 'E-mail inválido.';
+  if(/email-already-in-use|already registered/i.test(c+m))return 'Este e-mail já está cadastrado.';
+  if(/weak-password|at least 6 characters/i.test(c+m))return 'A senha precisa ter pelo menos 6 caracteres.';
+  if(/requires-recent-login/.test(c))return 'Por segurança, saia e entre novamente antes de trocar a senha.';
+  if(/too-many-requests|rate limit/i.test(c+m))return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+  if(/network-request-failed|unavailable|failed to fetch|network/i.test(c+m))return 'Sem conexão com o servidor. Verifique sua internet.';
+  if(/permission-denied|insufficient permissions|row-level security/i.test(c+m))return 'Você não possui permissão para esta operação.';
+  if(/operation-not-allowed/.test(c))return 'O login por e-mail e senha não está ativado no Firebase.';
+  return m;
+}
+async function gravarEmLotes(ops){for(let i=0;i<ops.length;i+=400){const b=fdb.batch();ops.slice(i,i+400).forEach(f=>f(b));await b.commit()}}
+async function sincronizar(){
+  if(!atual)return;
+  const L=docsAtuais(),ops=[],novoEspelho={};
+  for(const t in L){
+    const antes=espelho[t]||new Map();
+    L[t].forEach((json,id)=>{if(antes.get(id)!==json)ops.push(b=>b.set(fdb.collection(t).doc(id),JSON.parse(json)))});
+    antes.forEach((_,id)=>{if(!L[t].has(id))ops.push(b=>b.delete(fdb.collection(t).doc(id)))});
+    novoEspelho[t]=L[t];
+  }
+  const jm=JSON.stringify(modelo);
+  if(jm!==espelhoModelo)ops.push(b=>b.set(fdb.collection('config').doc('modelo'),{itens:JSON.parse(jm)}));
+  if(ops.length)await gravarEmLotes(ops);
+  espelho=novoEspelho;espelhoModelo=jm;
+}
+let filaSync=Promise.resolve();
+function sincronizarFila(){const p=filaSync.catch(()=>{}).then(sincronizar);filaSync=p;return p}
+function save(){return sincronizarFila().catch(e=>{console.error(e);toast('Erro ao salvar no servidor: '+traduzErro(e))})}
+
+async function carregarDados(){
+  const ler=async c=>(await fdb.collection(c).get()).docs.map(d=>d.data());
+  const [lc,le,lp,lt,lu,cfg]=await Promise.all([ler('contratos'),ler('contratosExternos'),ler('partes'),ler('tiposServico'),ler('perfis'),fdb.collection('config').get()]);
+  const semTipo=({tipo,...r})=>r;
+  contratos=lc;contratosExternos=le;usuarios=lu;
+  const tiposPadrao=cad.tipos;
+  cad={contratantes:lp.filter(r=>r.tipo==='contratante').map(semTipo),contratados:lp.filter(r=>r.tipo==='contratado').map(semTipo),tipos:lt};
+  const conf=Object.fromEntries(cfg.docs.map(d=>[d.id,d.data()]));
+  if(Array.isArray(conf.modelo?.itens)&&conf.modelo.itens.length)modelo=conf.modelo.itens;
+  try{if(conf.logo?.valor)localStorage.setItem('contratosProLogo',conf.logo.valor);else localStorage.removeItem('contratosProLogo')}catch(e){}
+  tirarFoto();
+  if(!conf.modelo)espelhoModelo=''; // modelo padrão ainda não gravado no banco
+  if(!lt.length)cad.tipos=tiposPadrao; // tipos padrão serão gravados no próximo salvamento
+}
+async function salvarConfig(chave,valor){
+  try{const ref=fdb.collection('config').doc(chave);if(valor==null)await ref.delete();else await ref.set({valor})}
+  catch(e){toast('Não foi possível salvar no servidor: '+traduzErro(e))}
+}
+// Arquivos dos contratos externos: guardados no próprio Firestore, em partes de 700 KB (o Storage exige o plano pago).
+const TAM_PARTE=700*1024;
+async function arquivoOp(acao,id,arquivo){
+  const ref=fdb.collection('arquivos').doc(String(id)),partes=ref.collection('partes');
+  const info=await ref.get(),nAntes=info.exists?(info.data().partes||0):0;
+  if(acao==='guardar'){
+    const bytes=new Uint8Array(await arquivo.arrayBuffer()),n=Math.max(1,Math.ceil(bytes.length/TAM_PARTE));
+    for(let i=0;i<n;i++)await partes.doc(String(i)).set({dados:firebase.firestore.Blob.fromUint8Array(bytes.subarray(i*TAM_PARTE,(i+1)*TAM_PARTE))});
+    for(let i=n;i<nAntes;i++)await partes.doc(String(i)).delete();
+    await ref.set({nome:arquivo.name||'',tipo:arquivo.type||'application/octet-stream',tamanho:bytes.length,partes:n});
+    return;
+  }
+  if(acao==='excluir'){for(let i=0;i<nAntes;i++)await partes.doc(String(i)).delete();if(info.exists)await ref.delete();return}
+  if(!info.exists)return null;
+  const pedacos=[];
+  for(let i=0;i<nAntes;i++){const p=await partes.doc(String(i)).get();if(!p.exists)return null;pedacos.push(p.data().dados.toUint8Array())}
+  return new Blob(pedacos,{type:info.data().tipo||'application/octet-stream'});
+}
+// Cria a conta de login de outra pessoa sem desconectar quem está usando o sistema.
+let appCadastro=null;
+async function criarContaFirebase(email,senha){
+  if(!appCadastro){appCadastro=firebase.initializeApp(firebaseConfig,'cadastro');await appCadastro.auth().setPersistence(firebase.auth.Auth.Persistence.NONE)}
+  const cred=await appCadastro.auth().createUserWithEmailAndPassword(email,senha);
+  const uid=cred.user.uid;await appCadastro.auth().signOut();
+  return uid;
+}
+async function criarUsuarioAuth(email,senha,nome){
+  try{return await criarContaFirebase(email,senha)}
+  catch(e){toast('Não foi possível criar o usuário: '+traduzErro(e));return null}
+}
+function sairDoServidor(){return fauth.signOut().catch(()=>{})}
+
+// ---------- Importação única dos dados do Supabase ----------
+function carregarScript(src){return new Promise((ok,falha)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>falha(new Error('não foi possível carregar '+src));document.head.appendChild(s)})}
 const MAPAS={
-  contratos:{extras:true,ignorar:['aditivos'],campos:[['id','id','t'],['numero','numero','t'],['nome','nome','t'],['status','status','t'],['tipo','tipo','t'],['contratante','contratante','t'],['contratada','contratada','t'],['docContratante','doc_contratante','t'],['docContratada','doc_contratada','t'],['enderecoContratante','endereco_contratante','t'],['enderecoContratada','endereco_contratada','t'],['telefoneContratante','telefone_contratante','t'],['telefoneContratada','telefone_contratada','t'],['inicio','inicio','d'],['fim','fim','d'],['valor','valor','m'],['parcelas','parcelas','i'],['tipoPagamento','tipo_pagamento','t'],['pagamento','pagamento','t'],['objeto','objeto','t'],['foro','foro','t'],['vals','vals','j'],['clausulas','clausulas','j'],['signatarios','signatarios','j'],['assinaturaStatus','assinatura_status','s'],['autentiqueId','autentique_id','t'],['autentiqueUrl','autentique_url','t']]},
+  contratos:{extras:true,campos:[['id','id','t'],['numero','numero','t'],['nome','nome','t'],['status','status','t'],['tipo','tipo','t'],['contratante','contratante','t'],['contratada','contratada','t'],['docContratante','doc_contratante','t'],['docContratada','doc_contratada','t'],['enderecoContratante','endereco_contratante','t'],['enderecoContratada','endereco_contratada','t'],['telefoneContratante','telefone_contratante','t'],['telefoneContratada','telefone_contratada','t'],['inicio','inicio','d'],['fim','fim','d'],['valor','valor','m'],['parcelas','parcelas','i'],['tipoPagamento','tipo_pagamento','t'],['pagamento','pagamento','t'],['objeto','objeto','t'],['foro','foro','t'],['vals','vals','j'],['clausulas','clausulas','j'],['signatarios','signatarios','j'],['assinaturaStatus','assinatura_status','s'],['autentiqueId','autentique_id','t'],['autentiqueUrl','autentique_url','t']]},
   aditivos:{extras:true,campos:[['id','id','t'],['numero','numero','t'],['data','data','d'],['justificativa','justificativa','t'],['novoValor','novo_valor','m'],['novaVigenciaFim','nova_vigencia_fim','d'],['novoObjeto','novo_objeto','t'],['clausulas','clausulas','j'],['signatarios','signatarios','j'],['assinaturaStatus','assinatura_status','s'],['autentiqueId','autentique_id','t'],['autentiqueUrl','autentique_url','t']]},
   contratos_externos:{extras:true,campos:[['id','id','t'],['nome','nome','t'],['contratante','contratante','t'],['contratada','contratada','t'],['valor','valor','m'],['assinatura','assinatura','d'],['inicio','inicio','d'],['fim','fim','d'],['notas','notas','t'],['arquivoNome','arquivo_nome','t']]},
   partes:{extras:true,campos:[['id','id','t'],['nome','nome','t'],['doc','documento','t'],['telefone','telefone','t'],['endereco','endereco','t'],['email','email','t']]},
   tipos_servico:{extras:false,campos:[['id','id','t'],['nome','nome','t']]},
   perfis:{extras:false,campos:[['id','id','r'],['nome','nome','t'],['login','login','t'],['perfil','perfil','t'],['acessos','acessos','o'],['primeiro','primeiro_acesso','b'],['trialInicio','trial_inicio','r'],['trialFim','trial_fim','r'],['trialDias','trial_dias','r']]}
 };
-function paraBanco(v,t){switch(t){
-  case 'm':return v==null||String(v).trim()===''?null:centavos(v)/100;
-  case 'd':return dataISO(v)||null;
-  case 'i':return Math.min(360,Math.max(1,parseInt(v)||1));
-  case 'j':return v??[];
-  case 'o':return v??{};
-  case 's':return v?String(v):'Não enviado';
-  case 'b':return !!v;
-  case 'r':return v===undefined?null:v;
-  default:return v==null?'':String(v);
-}}
-function doBanco(v,t){switch(t){
-  case 'm':return v==null?'':moeda(Number(v).toFixed(2));
-  case 'd':return v||'';
-  case 't':return v??'';
-  default:return v;
-}}
-function paraLinha(tabela,obj,extra={}){
-  const m=MAPAS[tabela],row={},usados=new Set(m.ignorar||[]);
-  for(const [c,col,t] of m.campos){usados.add(c);row[col]=paraBanco(obj[c],t)}
-  if(m.extras)row.extras=Object.fromEntries(Object.entries(obj).filter(([k,v])=>!usados.has(k)&&v!==undefined));
-  return Object.assign(row,extra);
+function doBanco(v,t){switch(t){case 'm':return v==null?'':moeda(Number(v).toFixed(2));case 'd':return v||'';case 't':return v??'';default:return v}}
+function deLinha(tabela,row){const m=MAPAS[tabela],o={...((m.extras&&row.extras)||{})};for(const [c,col,t] of m.campos)o[c]=doBanco(row[col],t);return o}
+async function importarDoSupabase(email,senha){
+  if(atual?.perfil!=='admin')return toast('Apenas o Administrador pode importar os dados.');
+  toast('Conectando ao Supabase para copiar os dados... aguarde.');
+  try{
+    if(!window.supabase)await carregarScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    const sbx=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'partner-importacao'}});
+    const ent=await sbx.auth.signInWithPassword({email,password:senha});
+    if(ent.error)throw new Error('login no Supabase recusado ('+traduzErro(ent.error)+')');
+    const ler=async(t,ordem)=>{let q=sbx.from(t).select('*');if(ordem)q=q.order(ordem);const r=await q;if(r.error)throw new Error('tabela '+t+': '+r.error.message);return r.data||[]};
+    const lerOpc=t=>ler(t).catch(e=>{console.warn(e);return []});
+    const [lc,la,le,lp,lt,lm,lu,lcfg,lsen]=await Promise.all([ler('contratos','criado_em'),ler('aditivos','criado_em'),ler('contratos_externos','criado_em'),ler('partes','criado_em'),ler('tipos_servico','criado_em'),ler('modelo_clausulas','ordem'),ler('perfis','criado_em'),lerOpc('configuracoes'),lerOpc('senhas_usuarios')]);
+    const cs=lc.map(r=>deLinha('contratos',r)),porContrato={};
+    la.forEach(r=>(porContrato[r.contrato_id]=porContrato[r.contrato_id]||[]).push(deLinha('aditivos',r)));
+    cs.forEach(c=>{if(porContrato[c.id])c.aditivos=porContrato[c.id]});
+    const juntar=(atuais,novos)=>{const ids=new Set(novos.map(x=>String(x.id)));return [...atuais.filter(x=>!ids.has(String(x.id))),...novos]};
+    contratos=juntar(contratos,cs);
+    const exts=le.map(r=>deLinha('contratos_externos',r));
+    contratosExternos=juntar(contratosExternos,exts);
+    cad={contratantes:juntar(cad.contratantes||[],lp.filter(r=>r.tipo==='contratante').map(r=>deLinha('partes',r))),contratados:juntar(cad.contratados||[],lp.filter(r=>r.tipo==='contratado').map(r=>deLinha('partes',r))),tipos:lt.length?juntar([],lt.map(r=>deLinha('tipos_servico',r))):cad.tipos};
+    if(lm.length)modelo=lm.map(r=>r.dados||{titulo:r.titulo,texto:r.texto});
+    // Usuários: cria a conta de login no Firebase reaproveitando a senha registrada no Supabase, quando houver.
+    const senhaDe=Object.fromEntries(lsen.map(x=>[x.id,x.senha])),rel={criados:0,ignorados:[]};let provisoria=null;
+    for(const u of lu.map(r=>deLinha('perfis',r))){
+      const login=String(u.login||'').trim().toLowerCase();
+      if(!login||usuarios.some(x=>String(x.login||'').toLowerCase()===login))continue; // já existe (inclui você)
+      let senhaU=senhaDe[u.id],trocar=false;
+      if(!senhaU||senhaU.length<6){
+        if(provisoria===null)provisoria=prompt('Alguns usuários não têm senha registrada no sistema antigo.\nDigite uma senha provisória (mínimo 6 caracteres). Eles deverão trocá-la no primeiro acesso:')||'';
+        senhaU=provisoria;trocar=true;
+      }
+      if(!senhaU||senhaU.length<6){rel.ignorados.push(u.login+' (sem senha)');continue}
+      let uid;try{uid=await criarContaFirebase(u.login,senhaU)}catch(e){rel.ignorados.push(u.login+' ('+traduzErro(e)+')');continue}
+      usuarios.push({...u,id:uid,primeiro:trocar?true:!!u.primeiro});
+      try{await fdb.collection('senhas').doc(uid).set({id:uid,senha:senhaU,atualizado:new Date().toISOString()});senhasUsuarios[uid]={id:uid,senha:senhaU}}catch(e){console.warn(e)}
+      rel.criados++;
+    }
+    await sincronizarFila();
+    // Arquivos dos contratos externos
+    let falhas=0;
+    for(const x of exts.filter(x=>x.arquivoNome)){
+      try{const {data,error}=await sbx.storage.from(BUCKET_EXTERNOS).download(x.id);if(error||!data)throw error||new Error('vazio');await arquivoOp('guardar',x.id,new File([data],x.arquivoNome,{type:data.type||'application/pdf'}))}
+      catch(e){console.error('Arquivo',x.id,e);falhas++}
+    }
+    const logo=lcfg.find(x=>x.chave==='logo');
+    if(logo?.valor){try{localStorage.setItem('contratosProLogo',logo.valor)}catch(e){}await salvarConfig('logo',logo.valor);atualizarLogo()}
+    await sbx.auth.signOut().catch(()=>{});
+    renderModelo();render();if(typeof renderUsuarios==='function'&&pode('usuarios'))renderUsuarios();
+    let msg=`Importação concluída: ${cs.length} contrato(s), ${exts.length} contrato(s) externo(s), ${lp.length} parte(s), ${rel.criados} usuário(s).`;
+    if(falhas)msg+=` ${falhas} arquivo(s) não foram copiados.`;
+    if(rel.ignorados.length)msg+=` Usuários não criados: ${rel.ignorados.join(', ')}.`;
+    toast(msg);
+  }catch(e){console.error(e);toast('Falha na importação: '+traduzErro(e))}
 }
-function deLinha(tabela,row){
-  const m=MAPAS[tabela],o={...((m.extras&&row.extras)||{})};
-  for(const [c,col,t] of m.campos)o[c]=doBanco(row[col],t);
-  return o;
+async function pedirImportacaoSupabase(){
+  if(atual?.perfil!=='admin')return toast('Apenas o Administrador pode importar os dados.');
+  const email=prompt('Importar dados do sistema antigo (Supabase).\n\nE-mail de administrador usado no sistema antigo:',atual.login||'');if(!email)return;
+  const senha=prompt('Senha desse administrador no sistema antigo:');if(!senha)return;
+  await importarDoSupabase(email.trim(),senha);
 }
-function linhasAtuais(){
-  const L={contratos:new Map(),aditivos:new Map(),contratos_externos:new Map(),partes:new Map(),tipos_servico:new Map(),perfis:new Map()};
-  const add=(t,row)=>L[t].set(String(row.id),row);
-  contratos.forEach(c=>{add('contratos',paraLinha('contratos',c));(c.aditivos||[]).forEach(a=>add('aditivos',paraLinha('aditivos',a,{contrato_id:String(c.id)})))});
-  contratosExternos.forEach(x=>add('contratos_externos',paraLinha('contratos_externos',x)));
-  (cad.contratantes||[]).forEach(x=>add('partes',paraLinha('partes',x,{tipo:'contratante'})));
-  (cad.contratados||[]).forEach(x=>add('partes',paraLinha('partes',x,{tipo:'contratado'})));
-  (cad.tipos||[]).forEach(x=>add('tipos_servico',paraLinha('tipos_servico',x)));
-  usuarios.forEach(x=>add('perfis',paraLinha('perfis',x)));
-  return L;
-}
-// Espelho do que já está no banco, para enviar só o que mudou
-let espelho={},espelhoModelo='';
-function tirarFoto(){
-  const L=linhasAtuais();espelho={};
-  for(const t in L)espelho[t]=new Map([...L[t]].map(([id,r])=>[id,JSON.stringify(r)]));
-  espelhoModelo=JSON.stringify(modelo);
-}
-function msgErro(e){return traduzErro(e)}
-function traduzErro(e){
-  const m=String(e?.message||e||'Erro desconhecido');
-  if(/invalid login credentials/i.test(m))return 'E-mail ou senha inválidos. Verifique suas credenciais.';
-  if(/email not confirmed/i.test(m))return 'E-mail ainda não confirmado. Verifique a caixa de entrada.';
-  if(/already registered|already been registered/i.test(m))return 'Este e-mail já está cadastrado.';
-  if(/at least 6 characters/i.test(m))return 'A senha precisa ter pelo menos 6 caracteres.';
-  if(/should be different/i.test(m))return 'A nova senha precisa ser diferente da atual.';
-  if(/rate limit|too many/i.test(m))return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
-  if(/failed to fetch|network/i.test(m))return 'Sem conexão com o servidor. Verifique sua internet.';
-  if(/row-level security/i.test(m))return 'Você não possui permissão para esta operação.';
-  return m;
-}
-async function sincronizar(){
-  if(!atual)return;
-  const L=linhasAtuais(),ok=r=>{if(r.error)throw r.error;return r};
-  await esperarRelogio();
-  // exclusões (filhos primeiro)
-  for(const t of ['aditivos','contratos_externos','contratos','partes','tipos_servico','perfis']){
-    const antes=espelho[t]||(espelho[t]=new Map());
-    const remover=[...antes.keys()].filter(id=>!L[t].has(id));
-    if(!remover.length)continue;
-    ok(await sb.from(t).delete().in('id',remover));
-    remover.forEach(id=>antes.delete(id));
-  }
-  // inclusões e alterações
-  for(const t of ['partes','tipos_servico','contratos','aditivos','contratos_externos','perfis']){
-    const antes=espelho[t]||(espelho[t]=new Map()),novos=[],alterados=[];
-    for(const [id,row] of L[t]){const j=JSON.stringify(row);if(!antes.has(id))novos.push([id,row,j]);else if(antes.get(id)!==j)alterados.push([id,row,j])}
-    if(t==='perfis')alterados.push(...novos); // o perfil é criado pelo cadastro no Auth; aqui só atualiza
-    else if(novos.length){ok(await sb.from(t).insert(novos.map(x=>x[1])));novos.forEach(([id,,j])=>antes.set(id,j))}
-    for(const [id,row,j] of alterados){const {id:_,...resto}=row;ok(await sb.from(t).update(resto).eq('id',id));antes.set(id,j)}
-  }
-  // modelo de cláusulas
-  const jm=JSON.stringify(modelo);
-  if(jm!==espelhoModelo){
-    const {data:velhos}=ok(await sb.from('modelo_clausulas').select('id'));
-    ok(await sb.from('modelo_clausulas').insert(modelo.map((c,i)=>({ordem:i+1,titulo:String(c.titulo||''),texto:String(c.texto||''),dados:c}))));
-    if(velhos?.length)ok(await sb.from('modelo_clausulas').delete().in('id',velhos.map(v=>v.id)));
-    espelhoModelo=jm;
-  }
-}
-async function esperarRelogio(){for(let i=0;i<6;i++){const r=await sb.from('tipos_servico').select('id').limit(1);if(!r.error||!/issued at future/i.test(r.error.message||''))return;await new Promise(ok=>setTimeout(ok,3000))}}
-let filaSync=Promise.resolve();
-function sincronizarFila(){const p=filaSync.catch(()=>{}).then(sincronizar);filaSync=p;return p}
-function save(){return sincronizarFila().catch(e=>{console.error(e);toast('Erro ao salvar no servidor: '+traduzErro(e))})}
-
-async function carregarDados(){
-  const ler=async(t,ordem)=>{for(let tentativa=1;;tentativa++){let q=sb.from(t).select('*');if(ordem)q=q.order(ordem);const r=await q;if(!r.error)return r.data||[];if(/issued at future|JWT/i.test(r.error.message||'')&&tentativa<6){await new Promise(ok=>setTimeout(ok,3000));continue}throw r.error}};
-  const [lc,la,le,lp,lt,lm,lu,lcfg]=await Promise.all([ler('contratos','criado_em'),ler('aditivos','criado_em'),ler('contratos_externos','criado_em'),ler('partes','criado_em'),ler('tipos_servico','criado_em'),ler('modelo_clausulas','ordem'),ler('perfis','criado_em'),ler('configuracoes')]);
-  contratos=lc.map(r=>deLinha('contratos',r));
-  const porContrato={};la.forEach(r=>(porContrato[r.contrato_id]=porContrato[r.contrato_id]||[]).push(deLinha('aditivos',r)));
-  contratos.forEach(c=>{if(porContrato[c.id])c.aditivos=porContrato[c.id]});
-  contratosExternos=le.map(r=>deLinha('contratos_externos',r));
-  cad={contratantes:lp.filter(r=>r.tipo==='contratante').map(r=>deLinha('partes',r)),contratados:lp.filter(r=>r.tipo==='contratado').map(r=>deLinha('partes',r)),tipos:lt.map(r=>deLinha('tipos_servico',r))};
-  if(lm.length)modelo=lm.map(r=>r.dados||{titulo:r.titulo,texto:r.texto});
-  usuarios=lu.map(r=>deLinha('perfis',r));
-  const logo=lcfg.find(x=>x.chave==='logo');
-  try{if(logo&&logo.valor)localStorage.setItem('contratosProLogo',logo.valor);else localStorage.removeItem('contratosProLogo')}catch(e){}
-  tirarFoto();
-}
-async function salvarConfig(chave,valor){
-  const r=valor==null?await sb.from('configuracoes').delete().eq('chave',chave):await sb.from('configuracoes').upsert({chave,valor});
-  if(r.error)toast('Não foi possível salvar no servidor: '+traduzErro(r.error));
-}
-async function arquivoOp(acao,id,arquivo){
-  const st=sb.storage.from(BUCKET_EXTERNOS);
-  if(acao==='guardar'){const {error}=await st.upload(id,arquivo,{upsert:true,contentType:arquivo.type||'application/octet-stream'});if(error)throw error;return}
-  if(acao==='excluir'){const {error}=await st.remove([id]);if(error)throw error;return}
-  const {data,error}=await st.download(id);
-  if(error){if(/not.?found|404|400/i.test(String(error.message||error.statusCode||'')))return null;throw error}
-  return data;
-}
-async function criarUsuarioAuth(email,senha,nome){
-  const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'partner-cadastro-temp'}});
-  const {data,error}=await tmp.auth.signUp({email,password:senha,options:{data:{nome,login:email}}});
-  if(error){toast('Não foi possível criar o usuário: '+traduzErro(error));return null}
-  if(!data.user||(data.user.identities&&data.user.identities.length===0)){toast('Este e-mail já está cadastrado.');return null}
-  return data.user.id;
-}
-// ===================== FIM SUPABASE =====================
+// ===================== FIM FIREBASE =====================
 
 
 function toast(t){
@@ -1301,7 +1349,7 @@ function formatarData(v){
 
 function encerrarPorExpiracao(){
   if(!atual || !trialExpirado(atual))return false;
-  sb.auth.signOut();
+  sairDoServidor();
   atual=null;
   $('app').style.display='none';
   $('senhaOverlay').classList.add('opacity-0','pointer-events-none');
@@ -1391,6 +1439,7 @@ function aplicarAcessos(){
     const el=$(id);
     if(el)el.style.display=pode(p,acao)?'':'none';
   });
+  if($('importarSupabase'))$('importarSupabase').style.display=atual.perfil==='admin'?'':'none';
 
   $('usuarioAtual').textContent=atual.nome+' ('+atual.login+')';
   $('perfilAtual').textContent=atual.perfil==='admin'?'Admin':nomeNivel(atual.perfil);
@@ -1547,8 +1596,9 @@ function montarSignatarios(lista=[],containerId='signatarios'){$(containerId).in
 function lerSignatarios(containerId='signatarios'){return [...document.querySelectorAll('#'+containerId+' .signatario')].map(el=>({id:el.dataset.id,publicId:el.dataset.publicId||'',link:el.dataset.link||'',assinadoEm:el.dataset.assinadoEm||'',nome:el.querySelector('.sig-nome').value.trim(),email:el.querySelector('.sig-email').value.trim(),papel:el.querySelector('.sig-papel').value,status:el.querySelector('.sig-status').textContent.trim()}));}
 
 /* ---------- Integração Autentique ---------- */
-const AUTENTIQUE_PADRAO='https://arulbvghzjzjtrxwsepk.supabase.co/functions/v1/autentique';
-function normalizarBaseAutentique(v){v=String(v||'').trim().replace(/\/+$/,'').replace(/\/enviar$/,'');return (!v||v==='/api/autentique')?AUTENTIQUE_PADRAO:v}
+// O token do Autentique precisa ficar num servidor. A função que existia no Supabase foi desativada na mudança para o Firebase gratuito;
+// informe aqui o endereço de um servidor próprio de integração (ex.: server.js) para voltar a enviar documentos.
+function normalizarBaseAutentique(v){v=String(v||'').trim().replace(/\/+$/,'').replace(/\/enviar$/,'');return (!v||v==='/api/autentique'||/supabase\.co\/functions/.test(v))?'':v}
 function atualizarPainelAssinatura(x={}){
   $('autentiqueEndpoint').value=normalizarBaseAutentique(localStorage.getItem('autentiqueEndpoint'));
   $('autentiqueChave').value=localStorage.getItem('autentiqueChave')||'';
@@ -1560,26 +1610,14 @@ function atualizarPainelAssinatura(x={}){
   $('enviarAutentique').textContent=x.autentiqueId?'✉ Reenviar como novo documento':'✉ Enviar para assinatura no Autentique';
 }
 function comPrazo(promessa,ms,msg){let t;return Promise.race([promessa,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error(msg)),ms)})]).finally(()=>clearTimeout(t))}
-function tokenSalvoSupabase(){try{const ref=new URL(SUPABASE_URL).hostname.split('.')[0],v=JSON.parse(localStorage.getItem('sb-'+ref+'-auth-token')||'null');return v?.access_token||v?.currentSession?.access_token||''}catch(e){return ''}}
-async function tokenDaSessao(){
-  // getSession() do supabase-js pode ficar travado (bloqueio interno de sessão, comum após a aba ficar em segundo plano).
-  // Por isso há prazo máximo e, se travar, usa o token já salvo no navegador.
-  let token='';
-  try{
-    let {data}=await comPrazo(sb.auth.getSession(),8000,'sessão travada');let s=data?.session;
-    if(s?.expires_at&&s.expires_at*1000<Date.now()+60000){const r=await comPrazo(sb.auth.refreshSession(),10000,'renovação travada');s=r?.data?.session||s}
-    token=s?.access_token||'';
-  }catch(e){console.warn('Autentique: sessão não respondeu, usando token salvo.',e)}
-  return token||tokenSalvoSupabase();
-}
 async function chamarAutentique(caminho,opcoes={},ids={endpoint:'autentiqueEndpoint',chave:'autentiqueChave'}){
   const base=normalizarBaseAutentique($(ids.endpoint).value);localStorage.setItem('autentiqueEndpoint',base);
   const chave=$(ids.chave).value.trim();if(chave)localStorage.setItem('autentiqueChave',chave);else localStorage.removeItem('autentiqueChave');
+  if(!base)throw new Error('o envio ao Autentique está desativado nesta versão (Firebase gratuito). Para usar, informe o endereço de um servidor de integração no campo "Servidor de integração".');
   let extra={};
-  if(/\/functions\/v1\//.test(base)){const token=await tokenDaSessao();if(!token)throw new Error('sessão expirada. Saia e entre novamente no sistema.');extra={Authorization:'Bearer '+token,apikey:SUPABASE_KEY}}
   const LIMITE=120000,ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),LIMITE);let r;
   try{r=await fetch(base+caminho,{...opcoes,signal:ctrl.signal,headers:{'Content-Type':'application/json',...extra,...(chave?{'X-Integracao-Chave':chave}:{})}})}
-  catch(e){if(e.name==='AbortError')throw new Error('o servidor de integração não respondeu em '+(LIMITE/1000)+' segundos. Verifique os logs da função "autentique" no Supabase (Edge Functions → autentique → Logs).');throw new Error('servidor de integração inacessível em '+base+'. Verifique sua conexão e se a função "autentique" foi publicada no Supabase.')}
+  catch(e){if(e.name==='AbortError')throw new Error('o servidor de integração não respondeu em '+(LIMITE/1000)+' segundos. Verifique o servidor de integração.');throw new Error('servidor de integração inacessível em '+base+'. Verifique sua conexão e se o servidor de integração está no ar.')}
   finally{clearTimeout(timer)}
   const bruto=await r.text().catch(()=>'');let data={};try{data=bruto?JSON.parse(bruto):{}}catch(e){data={erro:bruto.slice(0,300)}}
   if(!r.ok){
@@ -1588,7 +1626,7 @@ async function chamarAutentique(caminho,opcoes={},ids={endpoint:'autentiqueEndpo
     if(r.status===403)throw new Error('sem permissão no servidor (403). '+(det||'Confira a chave do servidor.'));
     if(r.status===404)throw new Error('função "autentique" ou rota '+caminho+' não encontrada (404). '+det);
     if(r.status===413)throw new Error('o PDF ficou grande demais para envio (413). Reduza o tamanho do logotipo.');
-    if([502,503,504,546].includes(r.status))throw new Error('a função do servidor excedeu o tempo ou falhou ('+r.status+'). '+(det||'Verifique os logs da função "autentique" no Supabase.'));
+    if([502,503,504,546].includes(r.status))throw new Error('a função do servidor excedeu o tempo ou falhou ('+r.status+'). '+(det||'Verifique o servidor de integração.'));
     throw new Error(det||('HTTP '+r.status));
   }
   if(!data.id&&opcoes.method==='POST')throw new Error('o servidor respondeu, mas não devolveu o identificador do documento no Autentique. '+(data.erro||''));
@@ -2253,24 +2291,22 @@ function matriz(ac={}){
 async function carregarSenhas(){
   senhasUsuarios={};senhasStatus='';
   if(atual?.perfil!=='admin')return;
-  const r=await sb.from('senhas_usuarios').select('id,senha,atualizado');
-  if(r.error){console.warn('Senhas indisponíveis:',r.error);senhasStatus='indisponivel';return}
-  (r.data||[]).forEach(x=>{senhasUsuarios[x.id]=x});
+  try{(await fdb.collection('senhas').get()).docs.forEach(d=>{senhasUsuarios[d.id]=d.data()})}
+  catch(e){console.warn('Senhas indisponíveis:',e);senhasStatus='indisponivel'}
 }
 async function definirSenhaServidor(id,senha){
-  // Altera a senha de login do usuário e guarda a cópia visível ao Administrador (função segura no Supabase).
-  const {error}=await sb.rpc('definir_senha_usuario',{alvo:id,nova:senha});
-  if(error)throw error;
-  senhasUsuarios[id]={id,senha,atualizado:new Date().toISOString()};
+  // Guarda a cópia da senha visível ao Administrador (a senha de login é definida ao criar a conta).
+  const reg={id,senha,atualizado:new Date().toISOString()};
+  await fdb.collection('senhas').doc(id).set(reg);
+  senhasUsuarios[id]=reg;
 }
 async function registrarMinhaSenha(senha){
-  const {error}=await sb.rpc('registrar_minha_senha',{nova:senha});
-  if(error)console.warn('Não foi possível registrar a senha:',error);
-  else if(atual)senhasUsuarios[atual.id]={id:atual.id,senha,atualizado:new Date().toISOString()};
+  if(!atual)return;
+  try{await definirSenhaServidor(atual.id,senha)}catch(e){console.warn('Não foi possível registrar a senha:',e)}
 }
 function celulaSenha(x){
   if(atual?.perfil!=='admin')return '<span class="font-mono text-xs text-slate-600">••••••</span>';
-  if(senhasStatus==='indisponivel')return '<span class="text-xs text-amber-600" title="Execute o script SQL de níveis de acesso no Supabase.">Indisponível</span>';
+  if(senhasStatus==='indisponivel')return '<span class="text-xs text-amber-600" title="Sem permissão para ler as senhas no Firebase.">Indisponível</span>';
   const s=senhasUsuarios[x.id]?.senha;
   if(!s)return '<span class="text-xs text-slate-400" title="A senha será registrada quando for definida ou alterada pelo sistema.">Não registrada</span>';
   return `<span class="inline-flex items-center gap-2"><span class="font-mono text-xs text-slate-800 senha-valor" data-senha="${esc(s)}">••••••</span><button type="button" class="ver-senha text-[11px] font-bold text-blue-600 hover:text-blue-800" data-id="${esc(x.id)}">Mostrar</button></span>`;
@@ -2392,15 +2428,17 @@ async function salvarUsuario(){
     try{await definirSenhaServidor(id,senhaNova)}catch(e){console.warn('Senha não registrada:',e)}
   }else if(senhaNova){
     if(id===atual.id){
-      const {error}=await sb.auth.updateUser({password:senhaNova});
-      if(error)return toast('Não foi possível alterar a senha: '+traduzErro(error));
+      try{await fauth.currentUser.updatePassword(senhaNova)}catch(e){return toast('Não foi possível alterar a senha: '+traduzErro(e))}
       await registrarMinhaSenha(senhaNova);
     }else{
-      try{await definirSenhaServidor(id,senhaNova)}
-      catch(e){return toast('Não foi possível alterar a senha: '+traduzErro(e)+'. Verifique se o script SQL de níveis de acesso foi executado no Supabase.')}
+      // No Firebase gratuito não é possível trocar a senha de outra pessoa pelo navegador: envia o e-mail de redefinição.
+      if(!confirm('No Firebase gratuito o administrador não pode definir a senha de outro usuário.\n\nEnviar para '+login+' um e-mail com o link para ele mesmo criar uma nova senha?'))return toast('Senha não alterada.');
+      try{await fauth.sendPasswordResetEmail(login);toast('E-mail de redefinição de senha enviado para '+login+'.')}
+      catch(e){return toast('Não foi possível enviar o e-mail: '+traduzErro(e))}
+      $('usenha').value='';
     }
   }
-  let x={id,nome:$('unome').value.trim(),login,perfil,primeiro:old?(senhaNova&&id!==atual.id?true:old.primeiro):true,acessos:ac,trialInicio,trialFim,trialDias};
+  let x={id,nome:$('unome').value.trim(),login,perfil,primeiro:old?old.primeiro:true,acessos:ac,trialInicio,trialFim,trialDias};
   if(x.perfil==='admin'){x.acessos=Object.fromEntries(perms.map(p=>[p,{...tudo}]));x.trialInicio=null;x.trialFim=null;x.trialDias=null;}
   let i=usuarios.findIndex(a=>a.id===id);
   i<0?usuarios.push(x):usuarios[i]=x;
@@ -2417,6 +2455,7 @@ function excluirUsuario(id){
   if(confirm('Tem certeza que deseja excluir este usuário?')){
     usuarios=usuarios.filter(x=>x.id!==id);
     delete senhasUsuarios[id];
+    fdb.collection('senhas').doc(id).delete().catch(()=>{});
     save();
     renderUsuarios();
     toast('Usuário excluído.');
@@ -2434,18 +2473,43 @@ async function login(){
   const erro=t=>{$('loginError').textContent=t;$('loginError').style.display='block'};
   if(!email||!senha)return erro('Informe e-mail e senha.');
   $('loginError').style.display='none';
-  const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
-  if(error)return erro(traduzErro(error));
-  await iniciarSessao(data.user);
+  let cred;
+  try{cred=await fauth.signInWithEmailAndPassword(email,senha)}
+  catch(e){
+    // Banco novo ainda sem administrador: oferece criar a primeira conta.
+    if(/invalid-credential|user-not-found|wrong-password|invalid-login-credentials/.test(e.code||'')){
+      let inicial=null;try{inicial=await fdb.collection('config').doc('inicial').get()}catch(_){}
+      if(inicial&&!inicial.exists)return primeiroAdministrador(email,senha);
+    }
+    return erro(traduzErro(e));
+  }
+  await iniciarSessao(cred.user);
+}
+async function primeiroAdministrador(email,senha){
+  const erro=t=>{$('loginError').textContent=t;$('loginError').style.display='block'};
+  if(!confirm('Primeiro acesso ao novo banco de dados (Firebase).\n\nCriar a conta de ADMINISTRADOR com este e-mail e esta senha?\n\nSe você já usava o sistema, use o mesmo e-mail e senha de antes: em seguida será oferecida a cópia dos dados antigos.'))return;
+  if(senha.length<6)return erro('A senha precisa ter pelo menos 6 caracteres.');
+  let cred;try{cred=await fauth.createUserWithEmailAndPassword(email,senha)}catch(e){return erro(traduzErro(e))}
+  const uid=cred.user.uid,agora=new Date().toISOString();
+  const perfil={id:uid,nome:email.split('@')[0],login:email,perfil:'admin',acessos:ACESSO_TOTAL(),primeiro:false,trialInicio:null,trialFim:null,trialDias:null};
+  try{
+    const b=fdb.batch();
+    b.set(fdb.collection('perfis').doc(uid),perfil);
+    b.set(fdb.collection('config').doc('inicial'),{criadoEm:agora,por:email});
+    b.set(fdb.collection('senhas').doc(uid),{id:uid,senha,atualizado:agora});
+    await b.commit();
+  }catch(e){await sairDoServidor();return erro('Não foi possível criar o administrador: '+traduzErro(e))}
+  await iniciarSessao(cred.user,{importar:{email,senha}});
 }
 
-async function iniciarSessao(user){
+async function iniciarSessao(user,opcoes={}){
   const erro=t=>{$('loginError').textContent=t;$('loginError').style.display='block'};
   let logoLocal=null;try{logoLocal=localStorage.getItem('contratosProLogo')}catch(e){}
-  try{await carregarDados()}catch(e){console.error(e);await sb.auth.signOut();return erro('Não foi possível carregar os dados: '+traduzErro(e))}
-  const u=usuarios.find(x=>x.id===user.id);
-  if(!u){await sb.auth.signOut();return erro('Este usuário não possui acesso ao sistema. Fale com o administrador.')}
-  if(trialExpirado(u)){await sb.auth.signOut();return erro('O período de teste deste usuário terminou. Solicite ao administrador a renovação ou liberação do acesso.')}
+  try{const p=await fdb.collection('perfis').doc(user.uid).get();if(!p.exists){await sairDoServidor();return erro('Este usuário não possui acesso ao sistema. Fale com o administrador.')}}catch(e){console.error(e);await sairDoServidor();return erro('Não foi possível verificar o acesso: '+traduzErro(e))}
+  try{await carregarDados()}catch(e){console.error(e);await sairDoServidor();return erro('Não foi possível carregar os dados: '+traduzErro(e))}
+  const u=usuarios.find(x=>x.id===user.uid);
+  if(!u){await sairDoServidor();return erro('Este usuário não possui acesso ao sistema. Fale com o administrador.')}
+  if(trialExpirado(u)){await sairDoServidor();return erro('O período de teste deste usuário terminou. Solicite ao administrador a renovação ou liberação do acesso.')}
   $('loginError').style.display='none';
   atual=u;
   await carregarSenhas();
@@ -2459,7 +2523,8 @@ async function iniciarSessao(user){
   }else{
     abrir(first||'dashboard');
   }
-  await oferecerImportacao(logoLocal);
+  if(opcoes.importar&&confirm('Deseja copiar agora os contratos, cadastros e usuários do sistema antigo (Supabase) para o novo banco?\n\nSerão usados o mesmo e-mail e senha que você acabou de digitar.'))await importarDoSupabase(opcoes.importar.email,opcoes.importar.senha);
+  else await oferecerImportacao(logoLocal);
 }
 
 // Envia para o banco os dados que estavam salvos só neste navegador (uma única vez)
@@ -2503,9 +2568,7 @@ async function alterarPrimeiraSenha(){
     $('senhaError').style.display='block';
     return;
   }
-  const {error}=await sb.auth.updateUser({password:a});
-  if(error){$('senhaError').textContent=traduzErro(error);$('senhaError').style.display='block';return;}
-  await sb.rpc('concluir_primeiro_acesso');
+  try{await fauth.currentUser.updatePassword(a)}catch(e){$('senhaError').textContent=traduzErro(e);$('senhaError').style.display='block';return;}
   await registrarMinhaSenha(a);
   atual.primeiro=false;
   usuarios=usuarios.map(x=>x.id===atual.id?atual:x);
@@ -2572,10 +2635,11 @@ document.addEventListener('click',e=>{
   btn=e.target.closest('#cancelCad');if(btn){cadastro(cadTipo);return;}
   btn=e.target.closest('.ver-senha');if(btn){const v=btn.parentElement.querySelector('.senha-valor'),mostrar=btn.textContent==='Mostrar';v.textContent=mostrar?v.dataset.senha:'••••••';btn.textContent=mostrar?'Ocultar':'Mostrar';return;}
   btn=e.target.closest('#novoUsuario');if(btn){novoUsuario();return;}
+  btn=e.target.closest('#importarSupabase');if(btn){pedirImportacaoSupabase();return;}
   btn=e.target.closest('#salvarUsuario');if(btn){salvarUsuario();return;}
   btn=e.target.closest('#alterarPrimeiraSenha');if(btn){alterarPrimeiraSenha();return;}
   btn=e.target.closest('#sair');if(btn){
-    sb.auth.signOut();
+    sairDoServidor();
     atual=null;senhasUsuarios={};senhasStatus='';
     $('app').style.display='none';
     $('senhaOverlay').classList.add('opacity-0','pointer-events-none');
@@ -2603,7 +2667,7 @@ document.addEventListener('click',e=>{
 });
 
 function atualizarLogo(){let url=localStorage.getItem('contratosProLogo')||'';let img=$('logoMiniatura');img.src=url;img.classList.toggle('hidden',!url)}
-$('logoArquivo').addEventListener('change',e=>{let arquivo=e.target.files?.[0];if(!arquivo)return;if(!['image/png','image/jpeg','image/webp'].includes(arquivo.type)||arquivo.size>1024*1024){e.target.value='';return toast('Escolha uma imagem PNG, JPG ou WebP de até 1 MB.')}let leitor=new FileReader();leitor.onload=()=>{try{localStorage.setItem('contratosProLogo',leitor.result);salvarConfig('logo',leitor.result);atualizarLogo();toast('Logomarca salva para os relatórios.')}catch(err){toast('Não há espaço neste navegador para salvar a imagem.')}};leitor.readAsDataURL(arquivo)});
+$('logoArquivo').addEventListener('change',e=>{let arquivo=e.target.files?.[0];if(!arquivo)return;if(!['image/png','image/jpeg','image/webp'].includes(arquivo.type)||arquivo.size>700*1024){e.target.value='';return toast('Escolha uma imagem PNG, JPG ou WebP de até 700 KB.')}let leitor=new FileReader();leitor.onload=()=>{try{localStorage.setItem('contratosProLogo',leitor.result);salvarConfig('logo',leitor.result);atualizarLogo();toast('Logomarca salva para os relatórios.')}catch(err){toast('Não há espaço neste navegador para salvar a imagem.')}};leitor.readAsDataURL(arquivo)});
 $('removerLogo').addEventListener('click',()=>{localStorage.removeItem('contratosProLogo');salvarConfig('logo',null);$('logoArquivo').value='';atualizarLogo();toast('Logomarca removida.')});
 atualizarLogo();
 $('busca').addEventListener('input',render);
@@ -2628,7 +2692,7 @@ $('confSenha').addEventListener('keydown',e=>{if(e.key==='Enter')alterarPrimeira
 renderModelo();
 setInterval(()=>{if(atual)encerrarPorExpiracao();},60000);
 $('app').style.display='none';
-sb.auth.getSession().then(({data})=>{if(data?.session?.user)iniciarSessao(data.session.user)});
+{const parar=fauth.onAuthStateChanged(u=>{parar();if(u)iniciarSessao(u)})}
 </script>
 <script>
 /* ===== Tema claro / escuro ===== */
