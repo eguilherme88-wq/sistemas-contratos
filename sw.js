@@ -2,7 +2,7 @@
  * Isolado dos demais apps do mesmo domínio:
  *  - só atua dentro da pasta deste app (escopo "./");
  *  - usa caches com prefixo próprio e só apaga os seus;
- *  - não intercepta Supabase, CDNs nem nenhum outro endereço externo.
+ *  - não intercepta Firebase, CDNs nem nenhum outro endereço externo.
  */
 const PREFIXO = 'partner-contratos-';
 const VERSAO = 'v1';
