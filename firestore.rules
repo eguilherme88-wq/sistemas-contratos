@@ -37,6 +37,16 @@ service cloud.firestore {
       allow write: if gestor() || (logado() && request.auth.uid == uid);
     }
 
+    // Cópias de PDF para a contratante baixar pelo link (gov.br): leitura pública só com o token, enquanto não expirar
+    match /documentosPublicos/{token} {
+      allow get: if resource.data.expiraEm > request.time;
+      allow create, update, delete: if temPerfil();
+      match /partes/{parte} {
+        allow get: if get(/databases/$(database)/documents/documentosPublicos/$(token)).data.expiraEm > request.time;
+        allow create, update, delete: if temPerfil();
+      }
+    }
+
     match /arquivos/{id}/partes/{parte} {
       allow read, write: if temPerfil();
     }

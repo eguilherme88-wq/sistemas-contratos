@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Contrato para assinatura | Partner</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+  :root{--azul:#2563eb;--texto:#0f172a;--suave:#64748b;--borda:#e2e8f0}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:var(--texto);line-height:1.5}
+  header{background:#0f172a;color:#fff;padding:18px 24px;font-weight:800;font-size:20px;letter-spacing:.3px}
+  header small{display:block;font-weight:400;font-size:12px;color:#94a3b8;letter-spacing:0}
+  main{max-width:720px;margin:32px auto;padding:0 16px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:16px;padding:28px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  h1{font-size:22px;margin:0 0 4px}
+  .meta{color:var(--suave);font-size:14px;margin:0 0 20px}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--azul);color:#fff;border:0;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .btn.sec{background:#fff;color:var(--texto);border:1px solid #cbd5e1}
+  ol{padding-left:20px;margin:24px 0 0}
+  li{margin:8px 0}
+  .aviso{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:12px 14px;font-size:14px;margin-top:20px}
+  .erro{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:12px;padding:14px}
+  footer{text-align:center;color:var(--suave);font-size:12px;margin:24px 0}
+  a{color:var(--azul)}
+</style>
+</head>
+<body>
+<header>Partner<small>gestão de contratos</small></header>
+<main>
+  <div class="card" id="conteudo"><p>Carregando o contrato...</p></div>
+  <footer>Documento disponibilizado para assinatura pelo gov.br. As assinaturas podem ser conferidas em <a href="https://validar.iti.gov.br" target="_blank" rel="noopener">validar.iti.gov.br</a>.</footer>
+</main>
+<script>
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const caixa=document.getElementById('conteudo');
+const erro=t=>{caixa.innerHTML=`<div class="erro">${esc(t)}</div>`};
+firebase.initializeApp({
+  apiKey:"AIzaSyCn8SJJ6li06ZDJdXQTI_gS5vLCph5RN4o",
+  authDomain:"partner-contratos.firebaseapp.com",
+  projectId:"partner-contratos",
+  storageBucket:"partner-contratos.firebasestorage.app",
+  messagingSenderId:"695130651026",
+  appId:"1:695130651026:web:5f5ce905e3dae38354e94b"
+});
+const db=firebase.firestore();
+const token=new URLSearchParams(location.search).get('d')||'';
+(async()=>{
+  if(!/^[0-9a-f]{64}$/.test(token))return erro('Link inválido. Confira se o endereço foi copiado inteiro.');
+  let info;
+  try{const s=await db.collection('documentosPublicos').doc(token).get();if(!s.exists)return erro('Este link não existe mais. Peça um novo link a quem enviou o contrato.');info=s.data()}
+  catch(e){return erro(/permission/i.test(e.code||e.message)?'Este link expirou ou foi desativado. Peça um novo link a quem enviou o contrato.':'Não foi possível carregar o contrato. Verifique sua conexão e tente de novo.')}
+  const validade=info.expiraEm?.toDate?info.expiraEm.toDate().toLocaleDateString('pt-BR'):'';
+  caixa.innerHTML=`
+    <h1>Contrato nº ${esc(info.contrato)}</h1>
+    <p class="meta">${esc(info.titulo)}<br>${info.contratada?`Enviado por <b>${esc(info.contratada)}</b>`:''}${info.contratante?` para <b>${esc(info.contratante)}</b>`:''}</p>
+    <button class="btn" id="baixar">⬇ Baixar o contrato (PDF)</button>
+    <ol>
+      <li>Baixe o PDF pelo botão acima, sem abrir em outro programa para editar.</li>
+      <li>Acesse o <a href="https://assinador.iti.br" target="_blank" rel="noopener">Assinador gov.br</a> e entre com a conta gov.br do representante (nível prata ou ouro).</li>
+      <li>Envie <b>este mesmo PDF</b>, posicione a assinatura e autorize pelo aplicativo gov.br.</li>
+      <li>Baixe o PDF assinado e devolva respondendo a mensagem que você recebeu.</li>
+    </ol>
+    <div class="aviso">Não imprima, edite nem converta o arquivo: isso remove a assinatura já feita.${validade?` Link disponível até ${esc(validade)}.`:''}</div>`;
+  document.getElementById('baixar').addEventListener('click',async e=>{
+    const b=e.currentTarget;b.disabled=true;b.textContent='Baixando...';
+    try{
+      const ref=db.collection('documentosPublicos').doc(token),partes=[];
+      for(let k=0;k<(info.partes||1);k++){const p=await ref.collection('partes').doc(String(k)).get();if(!p.exists)throw new Error('arquivo incompleto');partes.push(p.data().dados.toUint8Array())}
+      const url=URL.createObjectURL(new Blob(partes,{type:'application/pdf'})),a=document.createElement('a');
+      a.href=url;a.download=info.nome||('contrato_'+(info.contrato||'')+'.pdf');document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+      b.textContent='✔ Baixado — baixar de novo';
+    }catch(err){b.textContent='⬇ Baixar o contrato (PDF)';alert('Não foi possível baixar o arquivo. Tente novamente.')}
+    finally{b.disabled=false}
+  });
+})();
+</script>
+</body>
+</html>
