@@ -419,6 +419,9 @@
       <button data-page="modelo" data-perm="modelo" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800/70 hover:text-white">
         <span class="w-6 text-center text-lg text-slate-400"><svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h11"/><circle cx="18" cy="18" r="2"/></svg></span><em>Modelo Padrão</em>
       </button>
+      <button data-page="propostas" data-perm="propostas" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800/70 hover:text-white">
+        <span class="w-6 text-center text-lg text-slate-400"><svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 11v7M14.5 12.5h-3.25a1.25 1.25 0 0 0 0 2.5h1.5a1.25 1.25 0 0 1 0 2.5H9.5"/></svg></span><em>Propostas Comerciais</em>
+      </button>
       
       <div class="pt-4 pb-2 px-3 text-[10px] font-bold tracking-wider text-slate-500 uppercase">Cadastros Base</div>
       <div class="space-y-1 pl-2 border-l border-slate-800 ml-3 submenu">
@@ -830,6 +833,72 @@
       </div>
     </section>
 
+    <section id="propostas" class="section animate-fade-in space-y-6" style="display:none">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div>
+          <span class="text-xs font-extrabold text-blue-600 tracking-wider uppercase">Sistema de Precificação</span>
+          <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Propostas Comerciais</h1>
+          <p class="text-sm text-slate-500 mt-0.5">Propostas geradas no Partner Precificação SaaS, atualizadas em tempo real. Transforme uma proposta aceita em contrato com um clique.</p>
+        </div>
+        <div id="propConexaoInfo" class="flex flex-wrap items-center gap-3 text-sm"></div>
+      </div>
+
+      <div id="propLoginBox" class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4" style="display:none">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Conectar ao Sistema de Precificação</h3>
+          <p class="text-sm text-slate-500 mt-1">Entre com o <b>mesmo e-mail e senha que você usa no sistema de precificação</b>. A conexão fica salva neste aparelho até você sair do sistema de contratos ou clicar em "Desconectar".</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">E-mail</label><input class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" id="propEmail" type="email" autocomplete="off"></div>
+          <div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Senha</label><input class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" id="propSenha" type="password" autocomplete="off"></div>
+          <button type="button" id="propConectar" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-5 py-3 rounded-xl shadow-md transition-all">Conectar</button>
+        </div>
+        <p id="propLoginErro" class="text-sm text-rose-600" style="display:none"></p>
+      </div>
+
+      <div id="propConteudo" class="space-y-6" style="display:none">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4"><span class="text-xs font-bold uppercase tracking-wider text-slate-500">Total</span><b id="propKTotal" class="block text-2xl text-slate-900">0</b></div>
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4"><span class="text-xs font-bold uppercase tracking-wider text-amber-600">Pendentes</span><b id="propKPend" class="block text-2xl text-slate-900">0</b></div>
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4"><span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Aceitas</span><b id="propKAceitas" class="block text-2xl text-slate-900">0</b></div>
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4"><span class="text-xs font-bold uppercase tracking-wider text-rose-600">Recusadas</span><b id="propKRecusadas" class="block text-2xl text-slate-900">0</b></div>
+          <div class="bg-white border border-slate-200/80 rounded-xl p-4 col-span-2 md:col-span-1"><span class="text-xs font-bold uppercase tracking-wider text-blue-600">Sem contrato (aceitas)</span><b id="propKSemContrato" class="block text-2xl text-slate-900">0</b></div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h3 class="text-base font-bold text-slate-900">Propostas</h3>
+            <div class="w-full md:w-auto flex flex-col md:flex-row gap-3">
+              <select id="propFiltroStatus" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+                <option value="">Todos os status</option><option>Pendente</option><option>Aceita</option><option>Recusada</option>
+              </select>
+              <input class="w-full md:w-80 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm" id="propBusca" placeholder="Buscar por cliente, número ou sistema...">
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse tabela-resp">
+              <thead>
+                <tr class="bg-slate-50/70 border-b border-slate-200/60 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                  <th class="py-3.5 px-6">Número</th>
+                  <th class="py-3.5 px-6">Data</th>
+                  <th class="py-3.5 px-6">Cliente</th>
+                  <th class="py-3.5 px-6">Sistema</th>
+                  <th class="py-3.5 px-6">Condições</th>
+                  <th class="py-3.5 px-6">Status</th>
+                  <th class="py-3.5 px-6 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="propLista" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="propModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 p-4 overflow-auto" style="display:none">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-3xl mx-auto my-8 p-6 space-y-5" id="propModalCorpo"></div>
+      </div>
+    </section>
+
     <section id="cadastros" class="section animate-fade-in space-y-6" style="display:none">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
@@ -1095,7 +1164,7 @@
 
 <script>
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-const perms=['dashboard','contratos','modelo','cadastros','usuarios'],permNames={dashboard:'Painel',contratos:'Contratos',modelo:'Modelo',cadastros:'Cadastros',usuarios:'Usuários'};
+const perms=['dashboard','contratos','propostas','modelo','cadastros','usuarios'],permNames={dashboard:'Painel',contratos:'Contratos',propostas:'Propostas Comerciais',modelo:'Modelo',cadastros:'Cadastros',usuarios:'Usuários'};
 let contratos=[];
 let contratosExternos=[];
 let arquivoExternoPendente=null;
@@ -1234,7 +1303,7 @@ async function criarUsuarioAuth(email,senha,nome){
   try{return await criarContaFirebase(email,senha)}
   catch(e){toast('Não foi possível criar o usuário: '+traduzErro(e));return null}
 }
-function sairDoServidor(){return fauth.signOut().catch(()=>{})}
+function sairDoServidor(){precSair();return fauth.signOut().catch(()=>{})}
 
 // ---------- Importação única dos dados do Supabase ----------
 function carregarScript(src){return new Promise((ok,falha)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>falha(new Error('não foi possível carregar '+src));document.head.appendChild(s)})}
@@ -1464,7 +1533,7 @@ function prepararCelular(){
   window.matchMedia('(min-width:1024px)').addEventListener('change',e=>{if(e.matches)fecharMenu()});
   document.querySelectorAll('table.tabela-resp tbody').forEach(tb=>{rotularTabela(tb);new MutationObserver(()=>rotularTabela(tb)).observe(tb,{childList:true})});
 }
-const titulosTela={dashboard:'Painel',contratos:'Contratos Internos',externos:'Contratos Externos',externoForm:'Contrato Externo',modelo:'Modelo Padrão',editor:'Contrato',aditivos:'Aditivos',aditivoForm:'Aditivo',cadastros:'Cadastros',cadForm:'Cadastro',usuarios:'Usuários e Acessos',usuarioForm:'Usuário'};
+const titulosTela={dashboard:'Painel',contratos:'Contratos Internos',externos:'Contratos Externos',externoForm:'Contrato Externo',propostas:'Propostas Comerciais',modelo:'Modelo Padrão',editor:'Contrato',aditivos:'Aditivos',aditivoForm:'Aditivo',cadastros:'Cadastros',cadForm:'Cadastro',usuarios:'Usuários e Acessos',usuarioForm:'Usuário'};
 function abrir(id){
   if($('topbarTitulo'))$('topbarTitulo').textContent=titulosTela[id]||'Partner';
   if(window.innerWidth<1024)window.scrollTo(0,0);
@@ -1478,6 +1547,7 @@ function abrir(id){
   if(id==='usuarios'){renderUsuarios();if(atual?.perfil==='admin')carregarSenhas().then(renderUsuarios)}
   if(id==='externos')renderExternos();
   if(id==='aditivos')renderAditivos();
+  if(id==='propostas')abrirPropostas();
 }
 
 function tokens(text){let a=[],r=/\[([^\]]+)\]/g,m,last=0;while((m=r.exec(text))){a.push({t:'f',v:text.slice(last,m.index)});a.push({t:'v',v:m[0]});last=r.lastIndex}a.push({t:'f',v:text.slice(last)});return a}
@@ -1558,6 +1628,7 @@ function preencher(x={}){
 function limpar(){
   ['id','numero','nome','docContratante','docContratada','enderecoContratante','enderecoContratada','telefoneContratante','telefoneContratada','inicio','fim','valor','pagamento','objeto','parcelas','tipoPagamento','foro'].forEach(x=>$(x).value='');
   $('status').value='Minuta';$('parcelas').value='1';$('valorParcela').textContent='R$ 0,00';
+  propostaEmEdicao=null;
 }
 
 function proximo(){return'CTR-'+String(contratos.reduce((a,x)=>Math.max(a,parseInt(String(x.numero||'').replace(/\D/g,''))||0),0)+1).padStart(4,'0')}
@@ -2034,6 +2105,7 @@ function objetoContrato(){
     assinaturaStatus:$('assinaturaStatus')?.textContent||'Não enviado',
     autentiqueUrl:$('abrirAutentique')?.dataset.url||'',
     clausulas:modelo.map(x=>({...x})),
+    ...(propostaEmEdicao?{propostaId:propostaEmEdicao.id,propostaNumero:propostaEmEdicao.numero}:{}),
     atualizado:Date.now()
   };
 }
@@ -2688,6 +2760,216 @@ $('uperfil').addEventListener('change',()=>{atualizarCampoTeste();atualizarAjuda
 $('utesteSemLimite').addEventListener('change',atualizarCampoTeste);
 $('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('confSenha').addEventListener('keydown',e=>{if(e.key==='Enter')alterarPrimeiraSenha()});
+
+/* ===================== PROPOSTAS COMERCIAIS (Sistema de Precificação) =====================
+   As propostas ficam no Firebase do Partner Precificação SaaS (outro projeto), no documento
+   precificacao/{uid}, que só o dono pode ler. Por isso este menu entra nesse projeto com o
+   e-mail e a senha do usuário no sistema de precificação (conexão separada da do sistema de
+   contratos) e lê os dados em tempo real, somente leitura. */
+var precApp=null,precAuth=null,precDb=null,precUser=null,precDados=null,precErro='',precCarregando=false,precPararEscuta=null,precPronto=false;
+var propostaEmEdicao=null;
+const PREC_CONFIG={
+  apiKey:'AIzaSyCNNNbRFphMFg9yyRKPBJFSlUbw-vI80F8',
+  authDomain:'sistema-precificacao-b5349.firebaseapp.com',
+  projectId:'sistema-precificacao-b5349',
+  storageBucket:'sistema-precificacao-b5349.firebasestorage.app',
+  messagingSenderId:'678500257773',
+  appId:'1:678500257773:web:ed385e3087a3f4e82761e4'
+};
+const URL_PROPOSTA_PUBLICA='https://eguilherme88-wq.github.io/precificacao-saas/proposta.html';
+
+function precIniciar(){
+  if(precApp)return;
+  precApp=firebase.initializeApp(PREC_CONFIG,'precificacao');
+  precAuth=precApp.auth();precDb=precApp.firestore();
+  precAuth.onAuthStateChanged(u=>{precUser=u;precPronto=true;precEscutar();renderPropostas()});
+}
+function precEscutar(){
+  if(precPararEscuta){precPararEscuta();precPararEscuta=null}
+  precDados=null;precErro='';
+  if(!precUser){renderPropostas();return}
+  precCarregando=true;
+  precPararEscuta=precDb.collection('precificacao').doc(precUser.uid).onSnapshot(s=>{
+    precCarregando=false;precErro='';
+    try{precDados=s.exists&&s.data().json?JSON.parse(s.data().json):{}}catch(e){precDados={};precErro='Não foi possível ler os dados do sistema de precificação.'}
+    ['sistemas','clientes','modulos','propostas'].forEach(k=>{if(!Array.isArray(precDados[k]))precDados[k]=[]});
+    precDados.empresa=precDados.empresa||{};
+    renderPropostas();
+  },e=>{precCarregando=false;precErro=traduzErro(e);renderPropostas()});
+}
+async function precConectar(){
+  const email=$('propEmail').value.trim(),senha=$('propSenha').value,erro=$('propLoginErro'),b=$('propConectar');
+  erro.style.display='none';
+  if(!email||!senha){erro.textContent='Informe o e-mail e a senha do sistema de precificação.';erro.style.display='block';return}
+  b.disabled=true;b.textContent='Conectando…';
+  try{precIniciar();await precAuth.signInWithEmailAndPassword(email,senha);$('propSenha').value='';toast('Conectado ao sistema de precificação.')}
+  catch(e){erro.textContent=traduzErro(e);erro.style.display='block'}
+  finally{b.disabled=false;b.textContent='Conectar'}
+}
+function precSair(){try{if(precAuth)return precAuth.signOut().catch(()=>{});precIniciar();return precAuth.signOut().catch(()=>{})}catch(e){}}
+
+function abrirPropostas(){precIniciar();renderPropostas()}
+
+function brl(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v)||0)}
+function numeroProposta(p){return String(p.id||'').slice(0,8).toUpperCase()}
+function statusProposta(p){return p.aceite?'Aceita':(p.status||'Pendente')}
+function sistemaProposta(p){return precDados.sistemas.find(s=>s.id===p.sistemaId)?.nome||'Módulos independentes'}
+function clienteProposta(p){return precDados.clientes.find(c=>c.id===p.clienteId)||{nome:p.cliente||''}}
+function modulosProposta(p){
+  return (p.modulosIds||[]).map(id=>{const m=precDados.modulos.find(x=>x.id===id);if(!m)return null;const v=(p.valores&&p.valores[id]!=null)?Number(p.valores[id]):Number(m.anual)||0;return {nome:m.nome||'',valor:v,gratuito:!!m.gratuito&&v===0}}).filter(Boolean);
+}
+// Mesmas regras de condições do sistema de precificação (12 meses, desconto por volume e à vista)
+function condicoesPropostaPrec(p){
+  const o=p.opcoesPagamento;let parcelado=!o||o.parcelado!==false,avista=!o||o.avista!==false;if(!parcelado&&!avista)parcelado=avista=true;
+  const parcela=Number(p.parcela)||0,subtotal=Number(p.subtotal??p.parcela*12)||0;
+  return {parcelado,avista,ambas:parcelado&&avista,m12:p.mostrar12Meses!==false,parcela,subtotal,avistaValor:Number(p.total)||0,descontoVolume:Number(p.descontoVolume)||0,bruto:Number(p.bruto)||0};
+}
+function contratoDaProposta(p){return contratos.find(c=>c.propostaId===p.id)}
+function linkPublicoProposta(p){return p.linkToken&&p.linkPublicado?`${URL_PROPOSTA_PUBLICA}?p=${encodeURIComponent(p.linkToken)}`:''}
+function seloStatusProposta(st){
+  const c=st==='Aceita'?'text-emerald-700 bg-emerald-50 border-emerald-200':st==='Recusada'?'text-rose-700 bg-rose-50 border-rose-200':'text-amber-700 bg-amber-50 border-amber-200';
+  return `<span class="text-xs font-bold border px-2.5 py-1 rounded-full ${c}">${st==='Aceita'?'✅ ':st==='Recusada'?'❌ ':'⏳ '}${esc(st)}</span>`;
+}
+
+function renderPropostas(){
+  if(!$('propostas'))return;
+  const info=$('propConexaoInfo'),login=$('propLoginBox'),cont=$('propConteudo');
+  if(!precPronto){info.innerHTML='<span class="text-slate-500">Verificando conexão…</span>';login.style.display='none';cont.style.display='none';return}
+  if(!precUser){
+    info.innerHTML='<span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">Não conectado</span>';
+    login.style.display='';cont.style.display='none';return;
+  }
+  info.innerHTML=`<span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">● Conectado</span><span class="text-slate-500">${esc(precUser.email)}</span><button type="button" id="propDesconectar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-xl text-xs border border-slate-200">Desconectar</button>`;
+  login.style.display='none';cont.style.display='';
+  const lista=$('propLista');
+  if(precErro){lista.innerHTML=`<tr><td colspan="7" class="py-10 px-6 text-center text-rose-600">${esc(precErro)}</td></tr>`;return}
+  if(precCarregando||!precDados){lista.innerHTML='<tr><td colspan="7" class="py-10 px-6 text-center text-slate-500">Carregando propostas…</td></tr>';return}
+
+  const todas=precDados.propostas;
+  $('propKTotal').textContent=todas.length;
+  $('propKPend').textContent=todas.filter(p=>statusProposta(p)==='Pendente').length;
+  $('propKAceitas').textContent=todas.filter(p=>statusProposta(p)==='Aceita').length;
+  $('propKRecusadas').textContent=todas.filter(p=>statusProposta(p)==='Recusada').length;
+  $('propKSemContrato').textContent=todas.filter(p=>statusProposta(p)==='Aceita'&&!contratoDaProposta(p)).length;
+
+  const fs=$('propFiltroStatus').value,q=$('propBusca').value.trim().toLowerCase();
+  const filtradas=todas.filter(p=>(!fs||statusProposta(p)===fs)&&(!q||[p.cliente,numeroProposta(p),sistemaProposta(p),p.contato].some(v=>String(v||'').toLowerCase().includes(q))))
+    .sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  if(!filtradas.length){lista.innerHTML=`<tr><td colspan="7" class="py-10 px-6 text-center text-slate-500">${todas.length?'Nenhuma proposta encontrada com esses filtros.':'Nenhuma proposta cadastrada no sistema de precificação.'}</td></tr>`;return}
+  const podeCriar=pode('contratos','criar');
+  lista.innerHTML=filtradas.map(p=>{
+    const st=statusProposta(p),c=condicoesPropostaPrec(p),ct=contratoDaProposta(p);
+    const cond=`${c.parcelado?(c.m12?`12 × ${brl(c.parcela)}`:`${brl(c.parcela)}/mês`):`À vista ${brl(c.avistaValor)}`}${c.ambas?`<br><small class="text-slate-500">ou à vista ${brl(c.avistaValor)}</small>`:''}`;
+    const aceite=p.aceite?`<br><small class="text-emerald-700">Aceita online por ${esc(p.aceite.nome)} em ${esc(new Date(p.aceite.dataHora).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}))}</small>`:'';
+    const acaoContrato=ct?`<button type="button" class="prop-abrir-contrato bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold px-3 py-2 rounded-lg text-xs" data-id="${esc(ct.id)}">📄 ${esc(ct.numero||'Contrato')}</button>`
+      :(podeCriar?`<button type="button" class="prop-gerar bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-2 rounded-lg text-xs" data-id="${esc(p.id)}">＋ Gerar contrato</button>`:'');
+    return `<tr class="hover:bg-slate-50/60">
+      <td class="py-4 px-6 font-mono font-bold text-slate-700">${esc(numeroProposta(p))}</td>
+      <td class="py-4 px-6 whitespace-nowrap">${esc(dataBR(p.data))}</td>
+      <td class="py-4 px-6"><b class="text-slate-900">${esc(p.cliente)}</b>${p.contato?`<br><small class="text-slate-500">${esc(p.contato)}</small>`:''}${aceite}</td>
+      <td class="py-4 px-6">${esc(sistemaProposta(p))}<br><small class="text-slate-500">${(p.modulosIds||[]).length} módulo(s)</small></td>
+      <td class="py-4 px-6">${cond}</td>
+      <td class="py-4 px-6">${seloStatusProposta(st)}</td>
+      <td class="py-4 px-6 text-right"><div class="flex flex-wrap justify-end gap-2"><button type="button" class="prop-ver bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold px-3 py-2 rounded-lg text-xs" data-id="${esc(p.id)}">Ver detalhes</button>${acaoContrato}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function verProposta(id){
+  const p=precDados?.propostas.find(x=>x.id===id);if(!p)return;
+  const c=condicoesPropostaPrec(p),cli=clienteProposta(p),mods=modulosProposta(p),h=p.hospedagem,ct=contratoDaProposta(p),link=linkPublicoProposta(p),podeCriar=pode('contratos','criar');
+  const linhasMods=mods.map((m,i)=>`<tr><td class="py-2 pr-3 text-slate-500">${i+1}</td><td class="py-2 pr-3">${esc(m.nome)}</td><td class="py-2 text-right whitespace-nowrap">${m.gratuito?'Gratuito':brl(m.valor)+'/mês'}</td></tr>`).join('')
+    +(h&&h.adicionais?`<tr><td></td><td class="py-2 pr-3">Adicional de hospedagem (${h.adicionais} sistema(s) × ${brl(h.valorAdicional)})</td><td class="py-2 text-right whitespace-nowrap">${brl(h.valor)}/mês</td></tr>`:'');
+  const botoesGerar=ct?`<button type="button" class="prop-abrir-contrato bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(ct.id)}">Abrir contrato ${esc(ct.numero||'')}</button>`
+    :!podeCriar?'':(c.ambas
+      ?`<button type="button" class="prop-gerar bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(p.id)}" data-forma="parcelado">Gerar contrato — 12 parcelas</button><button type="button" class="prop-gerar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(p.id)}" data-forma="avista">Gerar contrato — à vista</button>`
+      :`<button type="button" class="prop-gerar bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(p.id)}">Gerar contrato</button>`);
+  $('propModalCorpo').innerHTML=`
+    <div class="flex justify-between items-start gap-4">
+      <div><span class="text-xs font-extrabold text-blue-600 tracking-wider uppercase">Proposta comercial nº ${esc(numeroProposta(p))}</span><h2 class="text-xl font-extrabold text-slate-900">${esc(p.cliente)}</h2><p class="text-sm text-slate-500">${esc(dataBR(p.data))} · ${esc(sistemaProposta(p))}</p></div>
+      <button type="button" class="prop-fechar bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold">✕ Fechar</button>
+    </div>
+    <div class="flex flex-wrap gap-2 items-center">${seloStatusProposta(statusProposta(p))}${p.aceite?`<span class="text-xs text-emerald-700">Aceita online por ${esc(p.aceite.nome)} (${esc(p.aceite.email)}) em ${esc(new Date(p.aceite.dataHora).toLocaleString('pt-BR'))}</span>`:''}</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1"><b class="block text-slate-900 mb-1">Cliente</b><div>${esc(cli.nome||p.cliente)}</div>${cli.documento?`<div>CPF/CNPJ: ${esc(cli.documento)}</div>`:''}${p.contato||cli.contato?`<div>Contato: ${esc(p.contato||cli.contato)}</div>`:''}${cli.telefone?`<div>Telefone: ${esc(cli.telefone)}</div>`:''}${cli.email?`<div>E-mail: ${esc(cli.email)}</div>`:''}${cli.cidade?`<div>Cidade: ${esc(cli.cidade)}</div>`:''}</div>
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1"><b class="block text-slate-900 mb-1">Condições</b>
+        ${c.m12?`<div>Valor de 12 meses: <b>${brl(c.bruto||c.subtotal)}</b></div>`:''}
+        ${c.descontoVolume?`<div>Desconto por volume (10%): −${brl(c.descontoVolume)}</div><div>Valor do contrato: <b>${brl(c.subtotal)}</b></div>`:''}
+        ${c.parcelado?`<div>${c.ambas?'Opção 1: ':''}${c.m12?`12 parcelas de <b>${brl(c.parcela)}</b>`:`Mensalidade de <b>${brl(c.parcela)}</b>`}</div>`:''}
+        ${c.avista?`<div>${c.ambas?'Opção 2: ':''}À vista por <b>${brl(c.avistaValor)}</b> (10% de desconto)</div>`:''}
+        <div>Meio de pagamento: ${esc(p.meioPagamento||'—')}</div>${p.condicao?`<div>Observação: ${esc(p.condicao)}</div>`:''}
+      </div>
+    </div>
+    <div><b class="block text-slate-900 mb-2 text-sm">Módulos (${mods.length})</b><div class="border border-slate-200 rounded-xl px-4 max-h-72 overflow-auto"><table class="w-full text-sm">${linhasMods||'<tr><td class="py-3 text-slate-500">Nenhum módulo encontrado.</td></tr>'}</table></div></div>
+    <div class="flex flex-wrap justify-end gap-3 pt-2 border-t border-slate-200">${link?`<a href="${esc(link)}" target="_blank" rel="noopener" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-5 py-3 rounded-xl">🔗 Abrir proposta online</a>`:''}${botoesGerar}</div>`;
+  $('propModal').style.display='block';
+}
+function fecharPropostaModal(){$('propModal').style.display='none'}
+
+// Procura a parte pelo CPF/CNPJ (só números) ou pelo nome; se não existir, cadastra.
+function parteParaContrato(tipo,dados){
+  const so=v=>String(v||'').replace(/\D/g,''),nome=String(dados.nome||'').trim();if(!nome)return null;
+  let x=(dados.doc&&cad[tipo].find(a=>so(a.doc)&&so(a.doc)===so(dados.doc)))||cad[tipo].find(a=>String(a.nome).trim().toLowerCase()===nome.toLowerCase());
+  if(x){let mudou=false;['doc','telefone','email','endereco'].forEach(k=>{if(!x[k]&&dados[k]){x[k]=dados[k];mudou=true}});return {parte:x,nova:false,mudou}}
+  x={id:Date.now().toString()+Math.floor(Math.random()*1000),nome,doc:dados.doc||'',telefone:dados.telefone||'',endereco:dados.endereco||'',email:dados.email||''};
+  cad[tipo].push(x);return {parte:x,nova:true,mudou:true};
+}
+function somarMeses(iso,meses){const [a,m,d]=iso.split('-').map(Number);const dt=new Date(a,m-1+meses,d);dt.setDate(dt.getDate()-1);return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
+function hojeISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+
+function gerarContratoDaProposta(id,forma){
+  if(!pode('contratos','criar'))return toast('Você não possui permissão para criar contratos.');
+  const p=precDados?.propostas.find(x=>x.id===id);if(!p)return;
+  const existente=contratoDaProposta(p);if(existente){fecharPropostaModal();return editar(existente.id)}
+  const st=statusProposta(p);
+  if(st!=='Aceita'&&!confirm(`Esta proposta está com status "${st}". Deseja gerar o contrato mesmo assim?`))return;
+  const c=condicoesPropostaPrec(p);
+  if(!forma)forma=c.parcelado?'parcelado':'avista';
+  const cli=clienteProposta(p),emp=precDados.empresa||{},mods=modulosProposta(p),sistema=sistemaProposta(p),num=numeroProposta(p);
+
+  const rc=parteParaContrato('contratantes',{nome:cli.nome||p.cliente,doc:cli.documento,telefone:cli.telefone,email:cli.email||p.emailAceite,endereco:cli.cidade});
+  const rd=emp.razao?parteParaContrato('contratados',{nome:emp.razao,doc:emp.cnpj,telefone:emp.telefone,email:emp.email,endereco:[emp.endereco,emp.cidade].filter(Boolean).join(' — ')}):null;
+  if(rc?.mudou||rd?.mudou)save();
+
+  fecharPropostaModal();
+  novo();
+  propostaEmEdicao={id:p.id,numero:num};
+  const tipo=cad.tipos.find(t=>/licen|saas|software|sistema/i.test(t.nome))||cad.tipos.find(t=>/servi/i.test(t.nome));
+  preencher({contratante:rc?.parte.nome||'',contratada:rd?.parte.nome||'',tipo:tipo?.nome||''});
+  if(rc)carregarParte('contratante');
+  if(rd)carregarParte('contratada');
+
+  $('nome').value=`Licenciamento SaaS — ${sistema} — ${p.cliente}`;
+  const inicio=hojeISO();
+  $('inicio').value=dataBR(inicio);$('fim').value=dataBR(somarMeses(inicio,Number(p.prazoMeses)||12));
+  const centParcela=Math.round(c.parcela*100);
+  if(forma==='avista'){$('valor').value=moeda(c.avistaValor.toFixed(2));$('parcelas').value='1'}
+  else{$('valor').value=moeda((centParcela*12/100).toFixed(2));$('parcelas').value='12'}
+  const meio=String(p.meioPagamento||''),opcoes=[...$('tipoPagamento').options].map(o=>o.value);
+  $('tipoPagamento').value=opcoes.find(o=>o&&o.toLowerCase()===meio.toLowerCase())||opcoes.find(o=>o&&meio&&meio.toLowerCase().includes(o.toLowerCase()))||(meio?'Outro':'');
+  const listaMods=mods.map(m=>m.nome).join('; ');
+  const h=p.hospedagem;
+  $('objeto').value=`Licenciamento de uso, na modalidade SaaS (software como serviço), do sistema ${sistema}, pelo prazo de ${Number(p.prazoMeses)||12} meses, contemplando os seguintes módulos: ${listaMods}${h&&h.valor?', incluindo hospedagem':''}, conforme Proposta Comercial nº ${num} de ${dataBR(p.data)}${p.aceite?`, aceita eletronicamente por ${p.aceite.nome} em ${new Date(p.aceite.dataHora).toLocaleString('pt-BR')}`:''}.${forma==='avista'?' Pagamento à vista com 10% de desconto.':''}${p.condicao?' Observação: '+p.condicao:''}`;
+  if(emp.cidade&&!$('foro').value)$('foro').value='Comarca de '+emp.cidade;
+  atualizarPagamento();
+  montarSignatarios([{papel:'Contratante',nome:rc?.parte.nome||'',email:rc?.parte.email||''},{papel:'Contratada',nome:emp.representante||rd?.parte.nome||'',email:emp.email||rd?.parte.email||''}]);
+  $('editorTitulo').textContent=`Novo Contrato — Proposta nº ${num}`;
+  toast(`Contrato preenchido com a proposta nº ${num}. Confira os dados e clique em "Salvar Contrato".`+(rc?.nova?' O cliente foi cadastrado em Contratantes.':''));
+}
+
+$('propConectar').addEventListener('click',precConectar);
+$('propSenha').addEventListener('keydown',e=>{if(e.key==='Enter')precConectar()});
+$('propBusca').addEventListener('input',renderPropostas);
+$('propFiltroStatus').addEventListener('change',renderPropostas);
+$('propModal').addEventListener('click',e=>{if(e.target.id==='propModal')fecharPropostaModal()});
+document.addEventListener('click',e=>{
+  let b=e.target.closest('#propDesconectar');if(b){precSair();return}
+  b=e.target.closest('.prop-ver');if(b){verProposta(b.dataset.id);return}
+  b=e.target.closest('.prop-fechar');if(b){fecharPropostaModal();return}
+  b=e.target.closest('.prop-gerar');if(b){gerarContratoDaProposta(b.dataset.id,b.dataset.forma);return}
+  b=e.target.closest('.prop-abrir-contrato');if(b){fecharPropostaModal();editar(b.dataset.id);return}
+});
+/* =================== FIM PROPOSTAS COMERCIAIS =================== */
 
 renderModelo();
 setInterval(()=>{if(atual)encerrarPorExpiracao();},60000);
