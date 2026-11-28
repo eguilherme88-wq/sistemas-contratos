@@ -1,0 +1,10 @@
+name = "partner-autentique"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+ORIGENS = "https://eguilherme88-wq.github.io"
+AUTENTIQUE_SANDBOX = "false"
+# Segredos (não coloque aqui): AUTENTIQUE_TOKEN e INTEGRACAO_CHAVE
+#   npx wrangler secret put AUTENTIQUE_TOKEN
+#   npx wrangler secret put INTEGRACAO_CHAVE

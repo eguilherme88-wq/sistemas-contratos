@@ -46,7 +46,7 @@ No primeiro acesso, se ainda não houver administrador, a tela de login oferece 
 
 Limitações do plano gratuito:
 
-- **Assinatura no Autentique** precisa de um servidor de integração próprio (campo "Servidor de integração"); sem ele, o envio fica desativado.
+- **Assinatura no Autentique** precisa de um servidor de integração próprio (campo "Servidor de integração"); sem ele, o envio fica desativado. O servidor está pronto em `servidor-autentique/` (Cloudflare Workers, plano gratuito); veja o passo a passo em `servidor-autentique/README.md`.
 - O administrador **não define a senha de outro usuário**: o sistema envia um e-mail de redefinição para o próprio usuário.
 - Ao excluir um usuário, o perfil é removido (ele perde o acesso), mas a conta de login continua listada em Authentication no console do Firebase.
 
