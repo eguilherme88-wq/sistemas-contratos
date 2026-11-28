@@ -52,10 +52,11 @@ Limitações do plano gratuito:
 
 ## Propostas Comerciais (integração com o Partner Precificação SaaS)
 
-O menu **Propostas Comerciais** mostra, em tempo real, as propostas geradas no sistema de precificação (`precificacao-saas`).
+O menu **Propostas Comerciais** mostra, em tempo real, as propostas geradas no sistema de precificação (`precificacao-saas`), **sem pedir senha**.
 
-- As propostas ficam no Firebase do sistema de precificação (projeto `sistema-precificacao-b5349`), que só o próprio dono pode ler. Por isso, na primeira vez, o menu pede o **e-mail e a senha do sistema de precificação**. A conexão fica salva no aparelho e é encerrada ao sair do sistema de contratos ou ao clicar em *Desconectar*.
-- A integração é **somente leitura**: nada é alterado no sistema de precificação e as regras do Firestore dele não precisam mudar.
+- O sistema de precificação publica uma cópia das propostas (com clientes, módulos, sistemas e dados da empresa) em `integracaoContratos/{chave}`, no Firebase dele. A chave é aleatória (256 bits) e fica guardada no banco deste sistema (`config/integracaoPrecificacao`), visível só para quem tem perfil.
+- **Ativação (uma única vez):** um Administrador abre o menu e informa o e-mail e a senha da precificação. A senha não é guardada; o sistema só busca a chave e salva. Depois disso, todos os usuários e aparelhos conectam sozinhos.
+- O sistema de contratos só lê as propostas; não altera nada na precificação.
 - **Gerar contrato**: preenche um novo contrato com o cliente (cadastrado automaticamente em Contratantes, se ainda não existir), a empresa contratada, a vigência de 12 meses, o valor (12 parcelas ou à vista), o meio de pagamento e o objeto com a lista de módulos. O contrato fica vinculado à proposta (`propostaId`) e a lista passa a mostrar o número do contrato.
 - Para usuários de nível Master/Usuário, libere o acesso em **Usuários e Acessos → Propostas Comerciais**.
 

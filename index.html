@@ -838,21 +838,22 @@
         <div>
           <span class="text-xs font-extrabold text-blue-600 tracking-wider uppercase">Sistema de Precificação</span>
           <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Propostas Comerciais</h1>
-          <p class="text-sm text-slate-500 mt-0.5">Propostas geradas no Partner Precificação SaaS, atualizadas em tempo real. Transforme uma proposta aceita em contrato com um clique.</p>
+          <p class="text-sm text-slate-500 mt-0.5">Propostas geradas no Partner Precificação SaaS, sincronizadas automaticamente em tempo real. Transforme uma proposta aceita em contrato com um clique.</p>
         </div>
         <div id="propConexaoInfo" class="flex flex-wrap items-center gap-3 text-sm"></div>
       </div>
 
       <div id="propLoginBox" class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4" style="display:none">
         <div>
-          <h3 class="text-base font-bold text-slate-900">Conectar ao Sistema de Precificação</h3>
-          <p class="text-sm text-slate-500 mt-1">Entre com o <b>mesmo e-mail e senha que você usa no sistema de precificação</b>. A conexão fica salva neste aparelho até você sair do sistema de contratos ou clicar em "Desconectar".</p>
+          <h3 class="text-base font-bold text-slate-900">Ativar a integração (somente uma vez)</h3>
+          <p class="text-sm text-slate-500 mt-1">Informe <b>uma única vez</b> o e-mail e a senha do sistema de precificação. A senha não é guardada: o sistema busca a chave da integração, salva no banco e, a partir daí, <b>todos os usuários e aparelhos veem as propostas automaticamente</b>, sem senha.</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div id="propLoginForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">E-mail</label><input class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" id="propEmail" type="email" autocomplete="off"></div>
           <div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Senha</label><input class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" id="propSenha" type="password" autocomplete="off"></div>
           <button type="button" id="propConectar" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-5 py-3 rounded-xl shadow-md transition-all">Conectar</button>
         </div>
+        <p id="propSemAdmin" class="text-sm text-amber-700" style="display:none">A integração ainda não foi ativada. Peça ao Administrador para abrir este menu e conectar uma vez.</p>
         <p id="propLoginErro" class="text-sm text-rose-600" style="display:none"></p>
       </div>
 
@@ -2762,11 +2763,11 @@ $('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('confSenha').addEventListener('keydown',e=>{if(e.key==='Enter')alterarPrimeiraSenha()});
 
 /* ===================== PROPOSTAS COMERCIAIS (Sistema de Precificação) =====================
-   As propostas ficam no Firebase do Partner Precificação SaaS (outro projeto), no documento
-   precificacao/{uid}, que só o dono pode ler. Por isso este menu entra nesse projeto com o
-   e-mail e a senha do usuário no sistema de precificação (conexão separada da do sistema de
-   contratos) e lê os dados em tempo real, somente leitura. */
-var precApp=null,precAuth=null,precDb=null,precUser=null,precDados=null,precErro='',precCarregando=false,precPararEscuta=null,precPronto=false;
+   O sistema de precificação publica uma cópia das propostas em integracaoContratos/{chave}, no
+   Firebase dele. A chave (aleatória, 256 bits) fica guardada no banco deste sistema
+   (config/integracaoPrecificacao), então todos os usuários e aparelhos se conectam sozinhos,
+   sem senha. Só na primeira vez um administrador informa o login da precificação para buscar a chave. */
+var precApp=null,precDb=null,precChave='',precDados=null,precErro='',precCarregando=false,precPararEscuta=null,precChaveEscutada='';
 var propostaEmEdicao=null;
 const PREC_CONFIG={
   apiKey:'AIzaSyCNNNbRFphMFg9yyRKPBJFSlUbw-vI80F8',
@@ -2778,37 +2779,65 @@ const PREC_CONFIG={
 };
 const URL_PROPOSTA_PUBLICA='https://eguilherme88-wq.github.io/precificacao-saas/proposta.html';
 
-function precIniciar(){
-  if(precApp)return;
-  precApp=firebase.initializeApp(PREC_CONFIG,'precificacao');
-  precAuth=precApp.auth();precDb=precApp.firestore();
-  precAuth.onAuthStateChanged(u=>{precUser=u;precPronto=true;precEscutar();renderPropostas()});
+function precIniciar(){if(!precApp){precApp=firebase.initializeApp(PREC_CONFIG,'precificacao');precDb=precApp.firestore()}}
+function precAplicar(json){
+  try{precDados=json?JSON.parse(json):{}}catch(e){precDados={};precErro='Não foi possível ler os dados do sistema de precificação.'}
+  ['sistemas','clientes','modulos','propostas'].forEach(k=>{if(!Array.isArray(precDados[k]))precDados[k]=[]});
+  precDados.empresa=precDados.empresa||{};
 }
 function precEscutar(){
+  if(precChaveEscutada===precChave&&precPararEscuta)return;
   if(precPararEscuta){precPararEscuta();precPararEscuta=null}
-  precDados=null;precErro='';
-  if(!precUser){renderPropostas();return}
-  precCarregando=true;
-  precPararEscuta=precDb.collection('precificacao').doc(precUser.uid).onSnapshot(s=>{
+  precChaveEscutada=precChave;precDados=null;precErro='';
+  if(!precChave){renderPropostas();return}
+  precIniciar();precCarregando=true;renderPropostas();
+  precPararEscuta=precDb.collection('integracaoContratos').doc(precChave).onSnapshot(s=>{
     precCarregando=false;precErro='';
-    try{precDados=s.exists&&s.data().json?JSON.parse(s.data().json):{}}catch(e){precDados={};precErro='Não foi possível ler os dados do sistema de precificação.'}
-    ['sistemas','clientes','modulos','propostas'].forEach(k=>{if(!Array.isArray(precDados[k]))precDados[k]=[]});
-    precDados.empresa=precDados.empresa||{};
-    renderPropostas();
+    if(!s.exists){precDados=null;precErro='A integração não foi encontrada no sistema de precificação. Um administrador precisa conectar novamente.';renderPropostas();return}
+    precAplicar(s.data().json);renderPropostas();
   },e=>{precCarregando=false;precErro=traduzErro(e);renderPropostas()});
 }
+// Primeira conexão (uma única vez): busca ou cria a chave da integração e guarda no banco deste sistema.
 async function precConectar(){
   const email=$('propEmail').value.trim(),senha=$('propSenha').value,erro=$('propLoginErro'),b=$('propConectar');
   erro.style.display='none';
   if(!email||!senha){erro.textContent='Informe o e-mail e a senha do sistema de precificação.';erro.style.display='block';return}
   b.disabled=true;b.textContent='Conectando…';
-  try{precIniciar();await precAuth.signInWithEmailAndPassword(email,senha);$('propSenha').value='';toast('Conectado ao sistema de precificação.')}
-  catch(e){erro.textContent=traduzErro(e);erro.style.display='block'}
-  finally{b.disabled=false;b.textContent='Conectar'}
+  let auth=null;
+  try{
+    precIniciar();auth=precApp.auth();
+    await auth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+    const uid=(await auth.signInWithEmailAndPassword(email,senha)).user.uid;
+    const achados=await precDb.collection('integracaoContratos').where('ownerUid','==',uid).limit(1).get();
+    let chave=achados.empty?'':achados.docs[0].id;
+    if(!chave){
+      chave=[...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('');
+      const base=await precDb.collection('precificacao').doc(uid).get(),d=base.exists&&base.data().json?JSON.parse(base.data().json):{};
+      const json=JSON.stringify({empresa:d.empresa||{},sistemas:d.sistemas||[],clientes:d.clientes||[],modulos:d.modulos||[],propostas:d.propostas||[]});
+      await precDb.collection('integracaoContratos').doc(chave).set({ownerUid:uid,json,atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()});
+    }
+    await fdb.collection('config').doc('integracaoPrecificacao').set({valor:chave,conectadoPor:atual?.login||'',conectadoEm:new Date().toISOString()});
+    precChave=chave;$('propSenha').value='';
+    toast('Integração ativada. A partir de agora todos os usuários veem as propostas automaticamente.');
+    precEscutar();
+  }catch(e){
+    erro.textContent=/permission|insufficient/i.test(String(e?.code||e?.message))?'O Firebase do sistema de precificação recusou o acesso. Publique as regras novas (firestore.rules do sistema de precificação) e tente de novo.':traduzErro(e);
+    erro.style.display='block';
+  }finally{
+    try{if(auth)await auth.signOut()}catch(e){}
+    b.disabled=false;b.textContent='Conectar';
+  }
 }
-function precSair(){try{if(precAuth)return precAuth.signOut().catch(()=>{});precIniciar();return precAuth.signOut().catch(()=>{})}catch(e){}}
-
-function abrirPropostas(){precIniciar();renderPropostas()}
+async function precDesconectar(){
+  if(!confirm('Desconectar o sistema de precificação para todos os usuários? Será preciso conectar de novo com o login da precificação.'))return;
+  try{await fdb.collection('config').doc('integracaoPrecificacao').delete();precChave='';precEscutar();toast('Integração desconectada.')}
+  catch(e){toast('Não foi possível desconectar: '+traduzErro(e))}
+}
+async function precLerChave(){
+  try{const d=await fdb.collection('config').doc('integracaoPrecificacao').get();precChave=d.exists?(d.data().valor||''):''}catch(e){console.warn(e)}
+}
+function precSair(){if(precPararEscuta){precPararEscuta();precPararEscuta=null}precChaveEscutada='';precChave='';precDados=null}
+async function abrirPropostas(){if(!precChave)await precLerChave();precEscutar()}
 
 function brl(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v)||0)}
 function numeroProposta(p){return String(p.id||'').slice(0,8).toUpperCase()}
@@ -2833,13 +2862,14 @@ function seloStatusProposta(st){
 
 function renderPropostas(){
   if(!$('propostas'))return;
-  const info=$('propConexaoInfo'),login=$('propLoginBox'),cont=$('propConteudo');
-  if(!precPronto){info.innerHTML='<span class="text-slate-500">Verificando conexão…</span>';login.style.display='none';cont.style.display='none';return}
-  if(!precUser){
+  const info=$('propConexaoInfo'),login=$('propLoginBox'),cont=$('propConteudo'),admin=atual?.perfil==='admin';
+  if(!precChave){
     info.innerHTML='<span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">Não conectado</span>';
-    login.style.display='';cont.style.display='none';return;
+    login.style.display='';cont.style.display='none';
+    $('propLoginForm').style.display=admin?'':'none';$('propSemAdmin').style.display=admin?'none':'';
+    return;
   }
-  info.innerHTML=`<span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">● Conectado</span><span class="text-slate-500">${esc(precUser.email)}</span><button type="button" id="propDesconectar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-xl text-xs border border-slate-200">Desconectar</button>`;
+  info.innerHTML=`<span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">● Conectado automaticamente</span>${admin?'<button type="button" id="propDesconectar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-xl text-xs border border-slate-200">Desconectar</button>':''}`;
   login.style.display='none';cont.style.display='';
   const lista=$('propLista');
   if(precErro){lista.innerHTML=`<tr><td colspan="7" class="py-10 px-6 text-center text-rose-600">${esc(precErro)}</td></tr>`;return}
@@ -2963,7 +2993,7 @@ $('propBusca').addEventListener('input',renderPropostas);
 $('propFiltroStatus').addEventListener('change',renderPropostas);
 $('propModal').addEventListener('click',e=>{if(e.target.id==='propModal')fecharPropostaModal()});
 document.addEventListener('click',e=>{
-  let b=e.target.closest('#propDesconectar');if(b){precSair();return}
+  let b=e.target.closest('#propDesconectar');if(b){precDesconectar();return}
   b=e.target.closest('.prop-ver');if(b){verProposta(b.dataset.id);return}
   b=e.target.closest('.prop-fechar');if(b){fecharPropostaModal();return}
   b=e.target.closest('.prop-gerar');if(b){gerarContratoDaProposta(b.dataset.id,b.dataset.forma);return}
