@@ -345,6 +345,8 @@
   /* selo de dias de teste na lista de usuários */
   .selo-teste{display:inline-block;white-space:nowrap}
   html.dark .selo-teste-data{color:#94a3b8}
+  #preview .report-sub-text,#preview .report-pre{white-space:pre-line}
+  #preview .report-pre{text-align:justify;margin:0 0 9px}
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
@@ -1558,10 +1560,15 @@ function modeloItem(item=''){
 function numeroClausula(titulo,indice){
   let t=String(titulo||'').trim().toUpperCase();
   let m=t.match(/CLÁUSULA\s*(\d+)/i);if(m)return Number(m[1]);
-  let nomes=['PRIMEIRA','SEGUNDA','TERCEIRA','QUARTA','QUINTA','SEXTA','SÉTIMA','OITAVA','NONA','DÉCIMA','DÉCIMA PRIMEIRA','DÉCIMA SEGUNDA'];
-  let ext=t.match(/CLÁUSULA\s+([A-ZÀ-Ú]+(?:\s+[A-ZÀ-Ú]+)?)/);if(ext){let n=nomes.findIndex(x=>ext[1].startsWith(x));if(n>=0)return n+1}
-  return indice+1;
+  let ext=t.match(/CLÁUSULA\s+([A-ZÀ-Ú]+(?:\s+[A-ZÀ-Ú]+)?)/);if(ext){let n=ORDINAIS.map((x,i)=>[x,i]).sort((a,b)=>b[0].length-a[0].length).find(([x])=>ext[1]===x||ext[1].startsWith(x+' ')||ext[1]===x);if(!n)n=ORDINAIS.map((x,i)=>[x,i]).sort((a,b)=>b[0].length-a[0].length).find(([x])=>ext[1].startsWith(x));if(n)return n[1]+1}
+  return indice+1-clausulasSemNumeroAntes(indice);
 }
+const ORDINAIS=(()=>{const u=['PRIMEIRA','SEGUNDA','TERCEIRA','QUARTA','QUINTA','SEXTA','SÉTIMA','OITAVA','NONA'];return [...u,'DÉCIMA',...u.map(x=>'DÉCIMA '+x),'VIGÉSIMA',...u.map(x=>'VIGÉSIMA '+x),'TRIGÉSIMA']})();
+// Qualificação das partes / preâmbulo: aparece no início, sem número, e substitui o parágrafo de abertura padrão
+function clausulaSemNumero(c){return /^\s*(QUALIFICA|PRE[AÂ]MBULO)/i.test(String(c?.titulo||''))}
+let listaNumeracao=null;
+function clausulasSemNumeroAntes(i){return (listaNumeracao||[]).slice(0,i).filter(clausulaSemNumero).length}
+function numeroSub(c,i,j){return clausulaSemNumero(c)?'':numeroClausula(c.titulo,i)+'.'+(j+1)}
 function textoSub(sub){let texto=String(sub.texto||'').trim(),titulo=String(sub.titulo||'').trim();let resultado=titulo&&titulo!==texto?(texto?titulo+' — '+texto:titulo):texto||titulo;return resultado.replace(/^\d+(?:\.\d+)*\.?(?:\s+|(?=[A-Za-zÀ-ú]))/,'')}
 function subclausulasDaClausula(c){
   let subs=(c.subclausulas||[]).map(sub=>({...sub,itens:[...(sub.itens||[])]}));
@@ -1591,19 +1598,26 @@ function salvarModelo(){
 }
 
 const camposContrato={OBJETO:'objeto',VALOR:'valor',VALOR_TOTAL:'valor',VALOR_POR_EXTENSO:'valorExtenso',VALOR_EXTENSO:'valorExtenso',PAGAMENTO:'pagamento',INICIO:'inicio',FIM:'fim',FORO:'foro',CONTRATANTE:'contratante',CONTRATADA:'contratada',DOC_CONTRATANTE:'docContratante',DOC_CONTRATADA:'docContratada',ENDERECO_CONTRATANTE:'enderecoContratante',ENDERECO_CONTRATADA:'enderecoContratada',TELEFONE_CONTRATANTE:'telefoneContratante',TELEFONE_CONTRATADA:'telefoneContratada',PARCELAS:'parcelas',VALOR_PARCELA:'valorParcela',TIPO_PAGAMENTO:'tipoPagamento',NOME:'nome',NUMERO:'numero'};
+// Campos preenchidos com os dados da proposta comercial (quando o contrato foi gerado a partir de uma proposta)
+const camposProposta={PROPOSTA_NUMERO:'numero',NUMERO_PROPOSTA:'numero',PROPOSTA_DATA:'data',DATA_PROPOSTA:'data',PROPOSTA_ACEITE:'aceite',ACEITE_PROPOSTA:'aceite',ACEITE_DATA:'aceiteData',DATA_ACEITE:'aceiteData',ACEITE_REGISTRO:'aceiteRegistro',ASSINATURA_CONTRATADA:'assinaturaContratada',SISTEMA:'sistema',QTD_MODULOS:'qtdModulos',QUANTIDADE_MODULOS:'qtdModulos',TABELA_MODULOS:'tabelaModulos',MODULOS:'tabelaModulos',LISTA_MODULOS:'listaModulos',VALOR_MENSAL:'valorMensal',MENSALIDADE:'valorMensal',VALOR_MENSAL_EXTENSO:'valorMensalExtenso',VALOR_MENSAL_POR_EXTENSO:'valorMensalExtenso',MEIO_PAGAMENTO:'meioPagamento',CONDICOES_PAGAMENTO:'condicoes',PRAZO_MESES:'prazo',PRAZO:'prazo',EMAIL_CONTRATANTE:'emailContratante',REPRESENTANTE_CONTRATANTE:'representanteContratante',CIDADE_CONTRATANTE:'cidadeContratante',EMAIL_CONTRATADA:'emailContratada',REPRESENTANTE_CONTRATADA:'representanteContratada',CARGO_REPRESENTANTE_CONTRATADA:'cargoContratada',CIDADE_CONTRATADA:'cidadeContratada',OBSERVACAO_PROPOSTA:'observacao'};
+var dadosPropostaEditor=null;
+function chaveCampo(k){return String(k).slice(1,-1).trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,'')}
+function campoProposta(k){return camposProposta[chaveCampo(k)]||null}
+function valorProposta(k,x=null){const id=campoProposta(k);if(!id)return null;const d=x?x.dadosProposta:dadosPropostaEditor;const v=d?.[id];return v==null||String(v).trim()===''?null:String(v)}
 function campoConhecido(k){let chave=k.slice(1,-1).trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,'');return camposContrato[chave]||null}
 function grupoExtenso(n){let u=['','um','dois','três','quatro','cinco','seis','sete','oito','nove'],d=['','dez','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'],e=['dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'],c=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];if(n===100)return 'cem';let partes=[];if(n>=100)partes.push(c[Math.floor(n/100)]);n%=100;if(n>=10&&n<20){partes.push(e[n-10]);n=0}else if(n>=20){partes.push(d[Math.floor(n/10)]);n%=10}if(n)partes.push(u[n]);return partes.join(' e ')}
 function inteiroExtenso(n){if(n===0)return 'zero';let partes=[],escalas=[['',''],['mil','mil'],['milhão','milhões'],['bilhão','bilhões'],['trilhão','trilhões']];for(let i=0;n>0&&i<escalas.length;i++,n=Math.floor(n/1000)){let g=n%1000;if(!g)continue;let palavra=i===1&&g===1?'mil':grupoExtenso(g)+(i?' '+(g===1?escalas[i][0]:escalas[i][1]):'');partes.unshift({g,palavra})}return partes.map((p,i)=>i===0?p.palavra:(p.g<100||p.g%100===0?' e ':', ')+p.palavra).join('')}
 function valorEmExtenso(v){if(v==null||String(v).trim()==='')return '';let c=centavos(v);if(!Number.isSafeInteger(c)||c<0||c>99999999999999)return '';let reais=Math.floor(c/100),cent=c%100,partes=[];if(reais)partes.push(inteiroExtenso(reais)+(reais>=1000000&&reais%1000000===0?' de':'')+(reais===1?' real':' reais'));if(cent)partes.push(inteiroExtenso(cent)+(cent===1?' centavo':' centavos'));return partes.join(reais&&cent?' e ':'')||'zero real'}
-function valorVinculado(k,x=null){let id=campoConhecido(k);if(!id)return null;let v=x?(id==='valorParcela'?valorParcelaContrato(x):x[id]):$(id)?.value;if(id==='valorExtenso')return valorEmExtenso(x?x.valor:$('valor').value);if(id==='valorParcela'){if(!(x?x.valor:$('valor').value))return '';if(!x)v=$('valorParcela').textContent}if(id==='valor')return moeda(v)||'';if(id==='inicio'||id==='fim')return dataBR(v)||'';return String(v??'')}
+function valorVinculado(k,x=null){let id=campoConhecido(k);if(!id)return valorProposta(k,x);let v=x?(id==='valorParcela'?valorParcelaContrato(x):x[id]):$(id)?.value;if(id==='valorExtenso')return valorEmExtenso(x?x.valor:$('valor').value);if(id==='valorParcela'){if(!(x?x.valor:$('valor').value))return '';if(!x)v=$('valorParcela').textContent}if(id==='valor')return moeda(v)||'';if(id==='inicio'||id==='fim')return dataBR(v)||'';return String(v??'')}
 function colorirVariavel(el){let preenchido=!!el.value.trim(),automatico=el.dataset.linked==='true';el.classList.toggle('bg-green-50',automatico&&preenchido);el.classList.toggle('border-green-400',automatico&&preenchido);el.classList.toggle('text-green-900',automatico&&preenchido);el.classList.toggle('bg-red-50',!preenchido);el.classList.toggle('border-red-400',!preenchido);el.classList.toggle('text-red-900',!preenchido);el.classList.toggle('bg-white',preenchido&&!automatico)}
 function atualizarClausulas(){document.querySelectorAll('.variable').forEach(el=>{if(el.dataset.linked==='true')el.value=valorVinculado(el.dataset.k)||'';colorirVariavel(el)})}
-function camposTexto(t,vals={}){return tokens(t||'').map(p=>{if(p.t==='f')return `<span class="whitespace-pre-wrap">${esc(p.v)}</span>`;let vinculado=!!campoConhecido(p.v),valor=vinculado?valorVinculado(p.v):vals?.[p.v]||'',classe=valor?(vinculado?'bg-green-50 border-green-400 text-green-900':'bg-white border-blue-300 text-blue-900'):'bg-red-50 border-red-400 text-red-900';return `<input class="border rounded-lg px-2.5 py-1 text-xs font-semibold variable inline-block ${classe} ${campoConhecido(p.v)==='valorExtenso'?'min-w-60':''}" data-k="${esc(p.v)}" data-linked="${vinculado}" ${vinculado?'readonly title="Preenchido pelos dados do contrato"':''} value="${esc(valor)}" placeholder="${esc(p.v)}">`}).join('')}
+function camposTexto(t,vals={}){return tokens(t||'').map(p=>{if(p.t==='f')return `<span class="whitespace-pre-wrap">${esc(p.v)}</span>`;let auto=valorVinculado(p.v),vinculado=auto!==null,valor=vinculado?String(auto).replace(/\n/g,'  ·  '):vals?.[p.v]||'',classe=valor?(vinculado?'bg-green-50 border-green-400 text-green-900':'bg-white border-blue-300 text-blue-900'):'bg-red-50 border-red-400 text-red-900';return `<input class="border rounded-lg px-2.5 py-1 text-xs font-semibold variable inline-block ${classe} ${campoConhecido(p.v)==='valorExtenso'||['valorMensalExtenso','aceite','assinaturaContratada'].includes(campoProposta(p.v))?'min-w-60':''} ${campoProposta(p.v)==='tabelaModulos'||campoProposta(p.v)==='listaModulos'?'w-full':''}" data-k="${esc(p.v)}" data-linked="${vinculado}" ${vinculado?`readonly title="${campoProposta(p.v)&&!campoConhecido(p.v)?'Preenchido pela proposta comercial':'Preenchido pelos dados do contrato'}"`:''} value="${esc(valor)}" placeholder="${esc(p.v)}">`}).join('')}
 
 function montarClausulas(lista,vals=[]){
+  listaNumeracao=lista;
   $('contratoClausulas').innerHTML=lista.map((c,i)=>`
     <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 contract-clause"><h4 class="text-xs font-bold text-blue-700 uppercase tracking-wider">${esc(c.titulo)}</h4>
-      ${subclausulasDaClausula(c).map((sub,j)=>`<div class="pl-4 border-l-2 border-blue-200 text-sm text-slate-700"><div class="font-semibold">${numeroClausula(c.titulo,i)}.${j+1}</div><div class="flex flex-wrap items-center gap-1.5 mt-1">${camposTexto(textoSub(sub),vals[i])}</div>${(sub.itens||[]).map(it=>`<div class="flex gap-2 mt-1"><span>-</span><div class="flex flex-wrap items-center gap-1.5">${camposTexto(String(it).replace(/^\s*-\s*/,''),vals[i])}</div></div>`).join('')}</div>`).join('')}
+      ${subclausulasDaClausula(c).map((sub,j)=>`<div class="pl-4 border-l-2 border-blue-200 text-sm text-slate-700">${clausulaSemNumero(c)?'':`<div class="font-semibold">${numeroSub(c,i,j)}</div>`}<div class="flex flex-wrap items-center gap-1.5 mt-1">${camposTexto(clausulaSemNumero(c)?String(sub.texto||textoSub(sub)):textoSub(sub),vals[i])}</div>${(sub.itens||[]).map(it=>`<div class="flex gap-2 mt-1"><span>-</span><div class="flex flex-wrap items-center gap-1.5">${camposTexto(String(it).replace(/^\s*-\s*/,''),vals[i])}</div></div>`).join('')}</div>`).join('')}
     </div>`).join('');
 }
 
@@ -1628,7 +1642,7 @@ function preencher(x={}){
 function limpar(){
   ['id','numero','nome','docContratante','docContratada','enderecoContratante','enderecoContratada','telefoneContratante','telefoneContratada','inicio','fim','valor','pagamento','objeto','parcelas','tipoPagamento','foro'].forEach(x=>$(x).value='');
   $('status').value='Minuta';$('parcelas').value='1';$('valorParcela').textContent='R$ 0,00';
-  propostaEmEdicao=null;
+  propostaEmEdicao=null;dadosPropostaEditor=null;
 }
 
 function proximo(){return'CTR-'+String(contratos.reduce((a,x)=>Math.max(a,parseInt(String(x.numero||'').replace(/\D/g,''))||0),0)+1).padStart(4,'0')}
@@ -1819,19 +1833,22 @@ function criarRedatorPdf(doc){
   const logoTopo=async()=>{const logo=await logoParaPng(localStorage.getItem('contratosProLogo'));if(logo){const e=Math.min(45/logo.w,22/logo.h),w=logo.w*e,h=logo.h*e;doc.addImage(logo.url,'PNG',105-w/2,st.y,w,h);st.y+=h+6}};
   return {st,M,LARG,TOPO,FUNDO,altLinha,garantir,paragrafo,assinaturas,rodape,logoTopo};
 }
-function ordinalClausula(n){const nomes=['PRIMEIRA','SEGUNDA','TERCEIRA','QUARTA','QUINTA','SEXTA','SÉTIMA','OITAVA','NONA','DÉCIMA','DÉCIMA PRIMEIRA','DÉCIMA SEGUNDA'];return nomes[n-1]||('Nº '+n)}
+function ordinalClausula(n){return ORDINAIS[n-1]||('Nº '+n)}
 
 async function gerarPdfContrato(x){
   const JsPDF=await carregarJsPDF();
   const doc=new JsPDF({unit:'mm',format:'a4'});
   const r=criarRedatorPdf(doc);
   await r.logoTopo();
-  r.paragrafo('INSTRUMENTO PARTICULAR DE CONTRATO',{tam:14,estilo:'bold',alinhar:'center',depois:1});
-  r.paragrafo(`Nº ${x.numero||''} · ${x.tipo||'Contrato'}`,{tam:9,fonte:'helvetica',alinhar:'center',depois:8});
-  r.paragrafo(`Pelo presente instrumento particular, de um lado ${x.contratante} (${x.docContratante||'Documento não informado'}), estabelecida em ${x.enderecoContratante||'Endereço não informado'}, doravante denominada simplesmente CONTRATANTE, e de outro lado ${x.contratada} (${x.docContratada||'Documento não informado'}), estabelecida em ${x.enderecoContratada||'Endereço não informado'}, doravante denominada CONTRATADA, celebram o presente contrato que se regerá pelas cláusulas seguintes:`,{primeira:12,depois:5});
-  (x.clausulas||modelo).forEach((c,i)=>{
+  const lista=x.clausulas||modelo;listaNumeracao=lista;const temQualificacao=lista.some(clausulaSemNumero);
+  r.paragrafo(tituloContrato(x),{tam:14,estilo:'bold',alinhar:'center',depois:1});
+  r.paragrafo(`Nº ${x.numero||''} · ${x.tipo||'Contrato'}`,{tam:9,fonte:'helvetica',alinhar:'center',depois:x.dadosProposta?2:8});
+  if(x.dadosProposta)r.paragrafo(referenciaProposta(x),{tam:9,fonte:'helvetica',alinhar:'center',depois:8});
+  if(!temQualificacao)r.paragrafo(aberturaPadrao(x),{primeira:12,depois:5});
+  lista.forEach((c,i)=>{
     r.garantir(r.altLinha(11)*3);
     r.paragrafo(c.titulo,{estilo:'bold',alinhar:'left',depois:2});
+    if(clausulaSemNumero(c)){subclausulasDaClausula(c).forEach(sub=>{r.paragrafo(substituir(String(sub.texto||textoSub(sub)),x,i),{depois:2.5});(sub.itens||[]).forEach(it=>r.paragrafo('- '+substituir(String(it).replace(/^\s*-\s*/,''),x,i),{recuo:8,depois:1}))});r.st.y+=2;return}
     subclausulasDaClausula(c).forEach((sub,j)=>{
       const num=`${numeroClausula(c.titulo,i)}.${j+1}`;r.garantir(r.altLinha(11)*2);
       doc.setFont('times','bold');doc.setFontSize(11);doc.text(num,r.M+4,r.st.y+r.altLinha(11)*0.8);
@@ -1841,9 +1858,17 @@ async function gerarPdfContrato(x){
     r.st.y+=2;
   });
   r.paragrafo('E por estarem justos e contratados, assinam o presente instrumento eletronicamente, por meio da plataforma Autentique.',{primeira:12,depois:10});
-  r.paragrafo(`${x.foro||'Comarca Geral'}, ${new Date().toLocaleDateString('pt-BR')}.`,{alinhar:'center',depois:18});
+  r.paragrafo(`${localContrato(x)}, ${new Date().toLocaleDateString('pt-BR')}.`,{alinhar:'center',depois:18});
   const partes=[[x.contratante,'CONTRATANTE'],[x.contratada,'CONTRATADA'],...(x.signatarios||[]).filter(s=>s.papel==='Testemunha'&&s.nome).map(s=>[s.nome,'TESTEMUNHA'])];
   r.assinaturas(partes);
+  const anexo=anexoProposta(x);
+  if(anexo.length){
+    doc.addPage();r.st.y=r.TOPO;
+    r.paragrafo(`ANEXO I – PROPOSTA COMERCIAL Nº ${x.dadosProposta.numero}`,{estilo:'bold',alinhar:'left',depois:4});
+    anexo.forEach(([k,v])=>r.paragrafo(`• ${k}: ${v}`,{recuo:4,depois:1.5}));
+    r.paragrafo('• Módulos contratados:',{recuo:4,depois:1});
+    r.paragrafo(x.dadosProposta.tabelaModulos||'',{recuo:10,alinhar:'left',depois:2});
+  }
   r.rodape(`${x.numero||''} — ${x.nome||''}`);
   return doc.output('datauristring').split(',')[1];
 }
@@ -2106,6 +2131,7 @@ function objetoContrato(){
     autentiqueUrl:$('abrirAutentique')?.dataset.url||'',
     clausulas:modelo.map(x=>({...x})),
     ...(propostaEmEdicao?{propostaId:propostaEmEdicao.id,propostaNumero:propostaEmEdicao.numero}:{}),
+    ...(dadosPropostaEditor?{dadosProposta:dadosPropostaEditor}:{}),
     atualizado:Date.now()
   };
 }
@@ -2132,8 +2158,8 @@ function editar(id){
   if(!pode('contratos','editar'))return toast('Você não possui permissão para editar contratos.');
   let x=contratos.find(a=>a.id===id);
   if(!x)return;
-  limpar();
-  Object.keys(x).forEach(k=>{if($(k)&&!['clausulas','vals'].includes(k))$(k).value=x[k]||''});
+  limpar();dadosPropostaEditor=x.dadosProposta||null;
+  Object.keys(x).forEach(k=>{if($(k)&&!['clausulas','vals','dadosProposta'].includes(k))$(k).value=x[k]||''});
   $('inicio').value=dataBR(x.inicio);$('fim').value=dataBR(x.fim);$('valor').value=moeda(x.valor);$('parcelas').value=x.parcelas||1;$('tipoPagamento').value=x.tipoPagamento||'';atualizarPagamento();
   $('editorTitulo').textContent='Editar Contrato';
   preencher(x);
@@ -2143,28 +2169,46 @@ function editar(id){
   if(x.autentiqueId&&x.assinaturaStatus!=='Assinado por todos')consultarAutentique(true);
 }
 
-function substituir(t,x,i){let v=x.vals?.[i]||{};return t.replace(/\[([^\]]+)\]/g,a=>valorVinculado(a,x)??v[a]??a)}
+// Campo sem valor sai como [•] (a preencher), como no modelo de contrato
+function substituir(t,x,i){let v=x.vals?.[i]||{};return t.replace(/\[([^\]]+)\]/g,a=>{let r=valorVinculado(a,x)??v[a];return r==null||String(r).trim()===''?'[•]':r})}
 
+function tituloContrato(x){return x.dadosProposta?'CONTRATO DE LICENCIAMENTO DE USO DE SOFTWARE NA MODALIDADE SaaS':'INSTRUMENTO PARTICULAR DE CONTRATO'}
+function referenciaProposta(x){const d=x.dadosProposta;if(!d)return '';return `Referência: Proposta Comercial nº ${d.numero}, emitida em ${d.data}${d.aceiteData?' e aceita eletronicamente em '+d.aceiteData:''}.`}
+function aberturaPadrao(x){return `Pelo presente instrumento particular, de um lado ${x.contratante} (${x.docContratante||'Documento não informado'}), estabelecida em ${x.enderecoContratante||'Endereço não informado'}, doravante denominada simplesmente CONTRATANTE, e de outro lado ${x.contratada} (${x.docContratada||'Documento não informado'}), estabelecida em ${x.enderecoContratada||'Endereço não informado'}, doravante denominada CONTRATADA, celebram o presente contrato que se regerá pelas cláusulas seguintes:`}
+function localContrato(x){return x.dadosProposta?.cidadeContratada||x.foro||'Comarca Geral'}
+function anexoProposta(x){const d=x.dadosProposta;if(!d)return [];return [
+  ['Sistema',`${d.sistema}`],['Emitida em',d.data],['Módulos',`${d.qtdModulos}, conforme Cláusula Segunda`],['Mensalidade',d.valorMensal],
+  ...(d.condicoes?[['Condições',d.condicoes]]:[]),['Meio de pagamento',d.meioPagamento||'—'],
+  ...(d.aceite?[['Aceite eletrônico da CONTRATANTE',d.aceite+(d.aceiteRegistro?' — registro '+d.aceiteRegistro:'')]]:[]),
+  ...(d.assinaturaContratada?[['Assinatura eletrônica da CONTRATADA',d.assinaturaContratada]]:[]),
+  ...(d.observacao?[['Observação',d.observacao]]:[])]}
 function visualizar(id){
   let x=contratos.find(a=>a.id===id);
   if(!x)return;
-  let corpo=(x.clausulas||modelo).map((c,i)=>`<h3 class="report-clause">${esc(c.titulo)}</h3>${subclausulasDaClausula(c).map((sub,j)=>`<div class="report-sub"><span class="report-number">${numeroClausula(c.titulo,i)}.${j+1}</span><span class="report-sub-text">${esc(substituir(textoSub(sub),x,i))}</span>${(sub.itens||[]).map(it=>`<p class="report-item">- ${esc(substituir(String(it).replace(/^\s*-\s*/,''),x,i))}</p>`).join('')}</div>`).join('')}`).join('');
+  let lista=x.clausulas||modelo;listaNumeracao=lista;
+  let temQualificacao=lista.some(clausulaSemNumero);
+  let corpo=lista.map((c,i)=>clausulaSemNumero(c)
+    ?`<h3 class="report-clause">${esc(c.titulo)}</h3>${subclausulasDaClausula(c).map(sub=>`<p class="report-pre">${esc(substituir(String(sub.texto||textoSub(sub)),x,i))}</p>${(sub.itens||[]).map(it=>`<p class="report-item">- ${esc(substituir(String(it).replace(/^\s*-\s*/,''),x,i))}</p>`).join('')}`).join('')}`
+    :`<h3 class="report-clause">${esc(c.titulo)}</h3>${subclausulasDaClausula(c).map((sub,j)=>`<div class="report-sub"><span class="report-number">${numeroSub(c,i,j)}</span><span class="report-sub-text">${esc(substituir(textoSub(sub),x,i))}</span>${(sub.itens||[]).map(it=>`<p class="report-item">- ${esc(substituir(String(it).replace(/^\s*-\s*/,''),x,i))}</p>`).join('')}</div>`).join('')}`).join('');
   let testemunhas=(Array.isArray(x.signatarios)?x.signatarios:[]).filter(s=>s.papel==='Testemunha'&&String(s.nome||'').trim());
   let assinaturasTestemunhas=testemunhas.length?`<div class="report-witnesses">${testemunhas.map(s=>`<div class="report-witness"><b>${esc(s.nome)}</b><br>TESTEMUNHA</div>`).join('')}</div>`:'';
+  let anexo=anexoProposta(x);
   let logo=localStorage.getItem('contratosProLogo')||'';
   $('preview').innerHTML=`
     ${/^data:image\/(png|jpeg|webp);base64,/.test(logo)?`<img class="report-logo" alt="Logomarca" src="${logo}">`:''}
-    <h1 class="text-center text-xl font-bold tracking-widest mb-1">INSTRUMENTO PARTICULAR DE CONTRATO</h1>
-    <p class="text-center text-xs font-sans text-slate-500 mb-8">Nº ${esc(x.numero)} · ${esc(x.tipo||'Contrato')} · Status: ${esc(x.status)}</p>
-    <p class="text-justify indent-8 mb-4">Pelo presente instrumento particular, de um lado <b>${esc(x.contratante)}</b> (${esc(x.docContratante||'Documento não informado')}), estabelecida em ${esc(x.enderecoContratante||'Endereço não informado')}, doravante denominada simplesmente <b>CONTRATANTE</b>, e de outro lado <b>${esc(x.contratada)}</b> (${esc(x.docContratada||'Documento não informado')}), estabelecida em ${esc(x.enderecoContratada||'Endereço não informado')}, doravante denominada <b>CONTRATADA</b>, celebram o presente contrato que se regerá pelas cláusulas seguintes:</p>
+    <h1 class="text-center text-xl font-bold tracking-widest mb-1">${esc(tituloContrato(x))}</h1>
+    <p class="text-center text-xs font-sans text-slate-500 mb-${x.dadosProposta?'2':'8'}">Nº ${esc(x.numero)} · ${esc(x.tipo||'Contrato')} · Status: ${esc(x.status)}</p>
+    ${x.dadosProposta?`<p class="text-center text-xs font-sans mb-8">${esc(referenciaProposta(x))}</p>`:''}
+    ${temQualificacao?'':`<p class="text-justify indent-8 mb-4">${esc(aberturaPadrao(x))}</p>`}
     ${corpo}
     <p class="text-justify indent-8 mt-6">E por estarem justos e contratados, assinam o presente instrumento em duas vias de igual teor.</p>
-    <p class="text-center mt-12 font-sans">${esc(x.foro||'Comarca Geral')}, ${new Date().toLocaleDateString('pt-BR')}.</p>
+    <p class="text-center mt-12 font-sans">${esc(localContrato(x))}, ${new Date().toLocaleDateString('pt-BR')}.</p>
     <div class="grid grid-cols-2 gap-16 mt-20 font-sans text-center text-xs">
       <div class="border-t border-slate-400 pt-3"><b>${esc(x.contratante)}</b><br><span class="text-slate-500">CONTRATANTE</span></div>
       <div class="border-t border-slate-400 pt-3"><b>${esc(x.contratada)}</b><br><span class="text-slate-500">CONTRATADA</span></div>
     </div>
     ${assinaturasTestemunhas}
+    ${anexo.length?`<h3 class="report-clause report-anexo">ANEXO I – PROPOSTA COMERCIAL Nº ${esc(x.dadosProposta.numero)}</h3>${anexo.map(([k,v])=>`<p class="report-item">• <b>${esc(k)}:</b> ${esc(v)}</p>`).join('')}<p class="report-item">• <b>Módulos contratados:</b></p><p class="report-pre report-item">${esc(x.dadosProposta.tabelaModulos||'')}</p>`:''}
   `;
   $('overlay').classList.remove('opacity-0','pointer-events-none');
 }
@@ -2536,7 +2580,7 @@ function excluirUsuario(id){
 
 function imprimir(){
   let w=window.open('','_blank');if(!w)return toast('Permita a abertura da janela para imprimir o contrato.');
-  w.document.write(`<html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato</title><style>@page{size:A4;margin:20mm 17mm}body{font-family:Georgia,serif;font-size:11pt;line-height:1.55;color:#111}h1{text-align:center;font-size:15pt;margin:0 0 6px}h3.report-clause{font-size:11pt;margin:18px 0 8px;break-after:avoid}.report-logo{display:block;max-width:180px;max-height:90px;object-fit:contain;margin:0 auto 18px}.report-sub{margin:0 0 9px 16px;text-align:justify;break-inside:avoid}.report-number{font-weight:bold;margin-right:8px;white-space:nowrap}.report-sub-text{white-space:pre-line}.report-item{margin:4px 0 0 18px;text-align:justify;white-space:pre-line}.report-witnesses{display:grid;grid-template-columns:1fr 1fr;gap:45px 50px;margin-top:70px;text-align:center;font-family:Arial,sans-serif;font-size:10pt}.report-witness{border-top:1px solid #444;padding-top:8px;break-inside:avoid}p{text-align:justify} .grid{display:grid;grid-template-columns:1fr 1fr;gap:50px}.border-t{border-top:1px solid #444}.text-center{text-align:center}.text-xs{font-size:10pt}.mt-20{margin-top:75px}.mt-12{margin-top:42px}.pt-3{padding-top:10px}@media print{.report-sub,h3.report-clause{page-break-inside:avoid}img{print-color-adjust:exact}}</style></head><body>${$('preview').innerHTML}</body></html>`);
+  w.document.write(`<html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato</title><style>@page{size:A4;margin:20mm 17mm}body{font-family:Georgia,serif;font-size:11pt;line-height:1.55;color:#111}h1{text-align:center;font-size:15pt;margin:0 0 6px}h3.report-clause{font-size:11pt;margin:18px 0 8px;break-after:avoid}.report-logo{display:block;max-width:180px;max-height:90px;object-fit:contain;margin:0 auto 18px}.report-sub{margin:0 0 9px 16px;text-align:justify;break-inside:avoid}.report-number{font-weight:bold;margin-right:8px;white-space:nowrap}.report-sub-text{white-space:pre-line}.report-pre{white-space:pre-line;text-align:justify;margin:0 0 9px}.report-anexo{margin-top:40px;break-before:page}.report-item{margin:4px 0 0 18px;text-align:justify;white-space:pre-line}.report-witnesses{display:grid;grid-template-columns:1fr 1fr;gap:45px 50px;margin-top:70px;text-align:center;font-family:Arial,sans-serif;font-size:10pt}.report-witness{border-top:1px solid #444;padding-top:8px;break-inside:avoid}p{text-align:justify} .grid{display:grid;grid-template-columns:1fr 1fr;gap:50px}.border-t{border-top:1px solid #444}.text-center{text-align:center}.text-xs{font-size:10pt}.mt-20{margin-top:75px}.mt-12{margin-top:42px}.pt-3{padding-top:10px}@media print{.report-sub,h3.report-clause{page-break-inside:avoid}img{print-color-adjust:exact}}</style></head><body>${$('preview').innerHTML}</body></html>`);
   w.document.close();let imagens=[...w.document.images];Promise.all(imagens.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;setTimeout(resolve,2500)}))).then(()=>{w.focus();w.print()});
 }
 
@@ -2781,7 +2825,7 @@ const URL_PROPOSTA_PUBLICA='https://eguilherme88-wq.github.io/precificacao-saas/
 function precIniciar(){if(!precApp){precApp=firebase.initializeApp(PREC_CONFIG,'precificacao');precDb=precApp.firestore()}}
 function precAplicar(json){
   try{precDados=json?JSON.parse(json):{}}catch(e){precDados={};precErro='Não foi possível ler os dados do sistema de precificação.'}
-  ['sistemas','clientes','modulos','propostas'].forEach(k=>{if(!Array.isArray(precDados[k]))precDados[k]=[]});
+  ['sistemas','categorias','clientes','modulos','propostas'].forEach(k=>{if(!Array.isArray(precDados[k]))precDados[k]=[]});
   precDados.empresa=precDados.empresa||{};
 }
 function precEscutar(){
@@ -2851,6 +2895,33 @@ function condicoesPropostaPrec(p){
   const o=p.opcoesPagamento;let parcelado=!o||o.parcelado!==false,avista=!o||o.avista!==false;if(!parcelado&&!avista)parcelado=avista=true;
   const parcela=Number(p.parcela)||0,subtotal=Number(p.subtotal??p.parcela*12)||0;
   return {parcelado,avista,ambas:parcelado&&avista,m12:p.mostrar12Meses!==false,parcela,subtotal,avistaValor:Number(p.total)||0,descontoVolume:Number(p.descontoVolume)||0,bruto:Number(p.bruto)||0};
+}
+function extensoNumero(n){n=Number(n)||0;return `${String(n).padStart(2,'0')} (${inteiroExtenso(n)})`}
+function dataHoraBRProp(iso){if(!iso)return '';const d=new Date(iso);return d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'})+' às '+d.toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'})+' (horário de Brasília)'}
+// Fotografia dos dados da proposta usada pelos campos automáticos do contrato ([SISTEMA], [TABELA_MODULOS], [VALOR_MENSAL] ...)
+function dadosPropostaParaContrato(p,forma){
+  const c=condicoesPropostaPrec(p),cli=clienteProposta(p),emp=precDados.empresa||{},sistema=sistemaProposta(p);
+  const mods=(p.modulosIds||[]).map(id=>{const m=precDados.modulos.find(x=>x.id===id);if(!m)return null;const v=(p.valores&&p.valores[id]!=null)?Number(p.valores[id]):Number(m.anual)||0;return {nome:m.nome||'',area:precDados.categorias.find(k=>k.id===m.categoriaId)?.nome||'',valor:v,gratuito:!!m.gratuito&&v===0}}).filter(Boolean);
+  const h=p.hospedagem,somaMods=mods.reduce((a,m)=>a+m.valor,0);
+  const linhas=mods.map((m,i)=>`${String(i+1).padStart(2,'0')}. ${m.nome}${m.area?' — '+m.area:''}: ${m.gratuito?'Gratuito':brl(m.valor)+'/mês'}`);
+  if(h&&h.adicionais)linhas.push(`+ Adicional de hospedagem (${h.adicionais} sistema(s) × ${brl(h.valorAdicional)}): ${brl(h.valor)}/mês`);
+  const totalBruto=Number(p.mensal)||somaMods+(h?.valor||0);
+  linhas.push(`Total (${mods.length} módulos): ${brl(totalBruto)}/mês`);
+  if(c.descontoVolume)linhas.push(`Mensalidade com desconto por volume (10%): ${brl(c.parcela)}/mês`);
+  const mensal=c.parcela||totalBruto,prazo=Number(p.prazoMeses)||12,asn=p.assinaturaContratada;
+  const condicoes=forma==='avista'?`Pagamento à vista de ${brl(c.avistaValor)}, com 10% de desconto`:(c.m12?`12 parcelas mensais de ${brl(c.parcela)}`:`Mensalidade de ${brl(c.parcela)}`);
+  return {
+    numero:numeroProposta(p),data:dataBR(p.data),sistema,qtdModulos:`${extensoNumero(mods.length)}`,
+    tabelaModulos:linhas.join('\n'),listaModulos:mods.map(m=>m.nome).join('; '),
+    valorMensal:brl(mensal),valorMensalExtenso:valorEmExtenso(mensal.toFixed(2)),meioPagamento:p.meioPagamento||'',condicoes,
+    prazo:`${prazo} (${inteiroExtenso(prazo)}) meses`,
+    aceite:p.aceite?`${dataHoraBRProp(p.aceite.dataHora)}, por ${p.aceite.nome}${p.aceite.email?' ('+p.aceite.email+')':''}`:'',
+    aceiteData:p.aceite?new Date(p.aceite.dataHora).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'}):'',aceiteRegistro:p.aceite?(p.linkToken||''):'',
+    assinaturaContratada:asn?`${dataHoraBRProp(asn.dataHora)}, por ${asn.nome}${asn.email?' ('+asn.email+')':''} — registro ${asn.registro}`:'',
+    emailContratante:cli.email||p.emailAceite||p.aceite?.email||'',representanteContratante:p.contato||cli.contato||p.aceite?.nome||'',cidadeContratante:cli.cidade||'',
+    emailContratada:emp.email||asn?.email||'',representanteContratada:emp.representante||asn?.nome||'',cargoContratada:emp.cargo||asn?.cargo||'',cidadeContratada:emp.cidade||asn?.cidade||'',
+    observacao:p.condicao||''
+  };
 }
 function contratoDaProposta(p){return contratos.find(c=>c.propostaId===p.id)}
 function linkPublicoProposta(p){return p.linkToken&&p.linkPublicado?`${URL_PROPOSTA_PUBLICA}?p=${encodeURIComponent(p.linkToken)}`:''}
@@ -2964,6 +3035,7 @@ function gerarContratoDaProposta(id,forma){
   fecharPropostaModal();
   novo();
   propostaEmEdicao={id:p.id,numero:num};
+  dadosPropostaEditor=dadosPropostaParaContrato(p,forma);
   const tipo=cad.tipos.find(t=>/licen|saas|software|sistema/i.test(t.nome))||cad.tipos.find(t=>/servi/i.test(t.nome));
   preencher({contratante:rc?.parte.nome||'',contratada:rd?.parte.nome||'',tipo:tipo?.nome||''});
   if(rc)carregarParte('contratante');
@@ -2981,6 +3053,7 @@ function gerarContratoDaProposta(id,forma){
   const h=p.hospedagem;
   $('objeto').value=`Licenciamento de uso, na modalidade SaaS (software como serviço), do sistema ${sistema}, pelo prazo de ${Number(p.prazoMeses)||12} meses, contemplando os seguintes módulos: ${listaMods}${h&&h.valor?', incluindo hospedagem':''}, conforme Proposta Comercial nº ${num} de ${dataBR(p.data)}${p.aceite?`, aceita eletronicamente por ${p.aceite.nome} em ${new Date(p.aceite.dataHora).toLocaleString('pt-BR')}`:''}.${forma==='avista'?' Pagamento à vista com 10% de desconto.':''}${p.condicao?' Observação: '+p.condicao:''}`;
   if(emp.cidade&&!$('foro').value)$('foro').value='Comarca de '+emp.cidade;
+  montarClausulas(modelo);
   atualizarPagamento();
   montarSignatarios([{papel:'Contratante',nome:rc?.parte.nome||'',email:rc?.parte.email||''},{papel:'Contratada',nome:emp.representante||rd?.parte.nome||'',email:emp.email||rd?.parte.email||''}]);
   $('editorTitulo').textContent=`Novo Contrato — Proposta nº ${num}`;

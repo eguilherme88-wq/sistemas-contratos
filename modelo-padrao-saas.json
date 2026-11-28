@@ -1,0 +1,101 @@
+[
+ {"titulo":"QUALIFICAÇÃO DAS PARTES","texto":"","subclausulas":[
+  {"texto":"CONTRATADA: [CONTRATADA], pessoa jurídica de direito privado, inscrita no CNPJ sob o nº [DOC_CONTRATADA], com sede em [ENDERECO_CONTRATADA], endereço eletrônico [EMAIL_CONTRATADA], telefone [TELEFONE_CONTRATADA], neste ato representada por [REPRESENTANTE_CONTRATADA], [QUALIFICACAO_REPRESENTANTE_CONTRATADA], inscrito(a) no CPF sob o nº [CPF_REPRESENTANTE_CONTRATADA], doravante denominada simplesmente CONTRATADA.","itens":[]},
+  {"texto":"CONTRATANTE: [CONTRATANTE], pessoa jurídica de direito privado, inscrita no CNPJ sob o nº [DOC_CONTRATANTE], com sede em [ENDERECO_CONTRATANTE], endereço eletrônico [EMAIL_CONTRATANTE], telefone [TELEFONE_CONTRATANTE], neste ato representada por [REPRESENTANTE_CONTRATANTE], [CARGO_REPRESENTANTE_CONTRATANTE], inscrito(a) no CPF sob o nº [CPF_REPRESENTANTE_CONTRATANTE], doravante denominada simplesmente CONTRATANTE.","itens":[]},
+  {"texto":"As partes acima qualificadas, doravante denominadas em conjunto PARTES e individualmente PARTE, têm entre si justo e contratado o presente Contrato de Licenciamento de Uso de Software na Modalidade SaaS (\"Contrato\"), que se regerá pelas cláusulas e condições seguintes, bem como pela Lei nº 9.609/1998 (Lei do Software), pela Lei nº 13.709/2018 (LGPD) e pelo Código Civil Brasileiro.","itens":[]}]},
+ {"titulo":"CLÁUSULA PRIMEIRA – DAS DEFINIÇÕES","texto":"","subclausulas":[
+  {"texto":"Para os fins deste Contrato, consideram-se:","itens":[
+   "Sistema: a plataforma \"[SISTEMA]\", de titularidade da CONTRATADA, disponibilizada em ambiente de nuvem (Software as a Service – SaaS) e acessada pela internet;",
+   "Módulos: os componentes funcionais do Sistema relacionados na Cláusula Segunda;",
+   "Usuários: os empregados, prepostos e colaboradores da CONTRATANTE autorizados por ela a acessar o Sistema;",
+   "Dados da CONTRATANTE: todas as informações, documentos e registros inseridos no Sistema pela CONTRATANTE ou por seus Usuários;",
+   "Proposta: a Proposta Comercial nº [PROPOSTA_NUMERO], que integra este Contrato como Anexo I."]}]},
+ {"titulo":"CLÁUSULA SEGUNDA – DO OBJETO","texto":"","subclausulas":[
+  {"texto":"O presente Contrato tem por objeto o licenciamento, pela CONTRATADA à CONTRATANTE, em caráter não exclusivo, intransferível, oneroso e temporário, do direito de uso do Sistema \"[SISTEMA]\", composto pelos [QTD_MODULOS] módulos abaixo relacionados, com os respectivos valores mensais:\n[TABELA_MODULOS]","itens":[]},
+  {"texto":"O licenciamento compreende o acesso ao Sistema via internet, a hospedagem dos Dados da CONTRATANTE, as atualizações e melhorias disponibilizadas pela CONTRATADA para os módulos contratados e o suporte técnico nos termos da Cláusula Sétima.","itens":[]},
+  {"texto":"Não estão incluídos no objeto deste Contrato, salvo ajuste por escrito entre as PARTES: (a) desenvolvimento de funcionalidades personalizadas; (b) migração ou importação de dados legados; (c) treinamento presencial; (d) integrações com sistemas de terceiros; e (e) equipamentos, conexão à internet e infraestrutura da CONTRATANTE.","itens":[]},
+  {"texto":"A inclusão ou exclusão de módulos deverá ser formalizada por termo aditivo ou por nova proposta comercial aceita pelas PARTES, com o correspondente ajuste do valor mensal.","itens":[]}]},
+ {"titulo":"CLÁUSULA TERCEIRA – DO PREÇO E DAS CONDIÇÕES DE PAGAMENTO","texto":"","subclausulas":[
+  {"texto":"Pelo licenciamento objeto deste Contrato, a CONTRATANTE pagará à CONTRATADA o valor mensal de [VALOR_MENSAL] ([VALOR_MENSAL_EXTENSO]), conforme a composição por módulo descrita na Cláusula Segunda.","itens":[]},
+  {"texto":"O pagamento será efetuado mensalmente, por meio de [MEIO_PAGAMENTO], para [DADOS_PARA_PAGAMENTO] de titularidade da CONTRATADA, até o dia [DIA_VENCIMENTO] de cada mês, referente ao mês de utilização [MES_DE_REFERENCIA].","itens":[]},
+  {"texto":"A primeira mensalidade vencerá em [PRIMEIRO_VENCIMENTO], podendo ser cobrada de forma proporcional (pro rata die) aos dias de utilização do primeiro mês.","itens":[]},
+  {"texto":"A CONTRATADA emitirá a nota fiscal correspondente a cada mensalidade, enviando-a ao endereço eletrônico da CONTRATANTE indicado neste Contrato.","itens":[]},
+  {"texto":"O comprovante de pagamento servirá como recibo de quitação da respectiva mensalidade.","itens":[]},
+  {"texto":"Os valores ajustados incluem todos os tributos incidentes sobre o licenciamento, ressalvadas as retenções legalmente obrigatórias, cuja responsabilidade caberá à parte designada pela legislação.","itens":[]},
+  {"texto":"Infraestrutura de banco de dados – Firebase. O Sistema utilizará, inicialmente, projeto de banco de dados hospedado na plataforma Google Firebase, no plano Spark, de uso gratuito, sem custo adicional para a CONTRATANTE além da mensalidade prevista no item 3.1.","itens":[]},
+  {"texto":"Caso o volume de dados, o armazenamento, os acessos ou os demais recursos utilizados pela CONTRATANTE ultrapassem os limites do plano Spark, tornando necessária a migração para o plano pago Blaze (cobrança conforme o uso), os valores cobrados pelo Google referentes a esse plano serão repassados à CONTRATANTE, em acréscimo à mensalidade prevista no item 3.1. A CONTRATADA comunicará previamente à CONTRATANTE a necessidade da migração, com a estimativa dos custos, e cobrará os valores conforme o faturamento efetivo do plano, mediante apresentação do respectivo demonstrativo.","itens":[]},
+  {"texto":"A criação de novos projetos dentro do banco de dados, solicitada pela CONTRATANTE, será cobrada à parte, conforme orçamento prévio aprovado por escrito pela CONTRATANTE, aplicando-se também a esses projetos o disposto no item 3.8 quanto aos custos do plano Blaze.","itens":[]}]},
+ {"titulo":"CLÁUSULA QUARTA – DO ATRASO NO PAGAMENTO","texto":"","subclausulas":[
+  {"texto":"O atraso no pagamento de qualquer mensalidade sujeitará a CONTRATANTE ao pagamento de multa moratória de 2% (dois por cento) sobre o valor devido, acrescido de juros de mora de 1% (um por cento) ao mês, calculados pro rata die, e de correção monetária pelo índice previsto na Cláusula Quinta.","itens":[]},
+  {"texto":"Persistindo o inadimplemento por mais de 15 (quinze) dias após o vencimento, a CONTRATADA poderá, mediante notificação prévia com antecedência mínima de 5 (cinco) dias, suspender o acesso ao Sistema até a regularização do débito, sem prejuízo da cobrança dos valores em aberto.","itens":[]},
+  {"texto":"A suspensão do acesso não exime a CONTRATANTE do pagamento das mensalidades vencidas durante o período de suspensão, e o acesso será restabelecido em até 2 (dois) dias úteis após a comprovação do pagamento.","itens":[]},
+  {"texto":"O inadimplemento por período superior a 60 (sessenta) dias autoriza a CONTRATADA a rescindir o presente Contrato, nos termos da Cláusula Décima Terceira.","itens":[]}]},
+ {"titulo":"CLÁUSULA QUINTA – DO REAJUSTE","texto":"","subclausulas":[
+  {"texto":"Os valores previstos neste Contrato serão reajustados anualmente, a cada período de 12 (doze) meses contados da data de assinatura, pela variação acumulada no período do índice que apresentar o maior percentual entre o IPCA/IBGE, o INPC/IBGE e o IGP-M/FGV. Na hipótese de extinção de qualquer desses índices, será considerado o índice oficial que vier a substituí-lo.","itens":[]},
+  {"texto":"Caso a variação acumulada de todos os índices mencionados no item 5.1 seja negativa no período, os valores serão mantidos sem alteração, não havendo redução da mensalidade.","itens":[]}]},
+ {"titulo":"CLÁUSULA SEXTA – DO PRAZO DE VIGÊNCIA","texto":"","subclausulas":[
+  {"texto":"O presente Contrato vigorará pelo prazo de [PRAZO_MESES], contados a partir de [INICIO] (data de liberação do acesso ao Sistema), com término em [FIM], renovando-se automaticamente por iguais e sucessivos períodos, salvo manifestação em contrário de qualquer das PARTES, por escrito, com antecedência mínima de 30 (trinta) dias do término da vigência.","itens":[]},
+  {"texto":"A CONTRATADA disponibilizará o acesso ao Sistema e as credenciais dos Usuários em até 5 (cinco) dias úteis contados da assinatura deste Contrato.","itens":[]}]},
+ {"titulo":"CLÁUSULA SÉTIMA – DO SUPORTE TÉCNICO E DA DISPONIBILIDADE","texto":"","subclausulas":[
+  {"texto":"A CONTRATADA prestará suporte técnico remoto à CONTRATANTE, por e-mail, telefone/WhatsApp ou outro canal por ela disponibilizado, em dias úteis, das 8h às 18h (horário de Brasília), para esclarecimento de dúvidas sobre o uso do Sistema e correção de falhas.","itens":[]},
+  {"texto":"A CONTRATADA envidará seus melhores esforços para manter o Sistema disponível 99% (noventa e nove por cento) do tempo em cada mês, excluídos desse cálculo: (a) manutenções programadas, previamente comunicadas com antecedência mínima de 48 (quarenta e oito) horas e, sempre que possível, realizadas fora do horário comercial; (b) falhas de conexão à internet ou de infraestrutura da CONTRATANTE; (c) eventos de caso fortuito ou força maior; e (d) falhas de provedores de serviços de terceiros alheias ao controle da CONTRATADA.","itens":[]},
+  {"texto":"As falhas reportadas serão atendidas observando-se os seguintes prazos de primeira resposta: (a) falha crítica, que impeça o uso do Sistema: até 4 (quatro) horas úteis; (b) falha que afete parcialmente uma funcionalidade: até 1 (um) dia útil; (c) dúvidas e solicitações gerais: até 2 (dois) dias úteis.","itens":[]}]},
+ {"titulo":"CLÁUSULA OITAVA – DAS OBRIGAÇÕES DA CONTRATADA","texto":"","subclausulas":[
+  {"texto":"Sem prejuízo das demais obrigações previstas neste Contrato, constituem obrigações da CONTRATADA:","itens":[
+   "a) disponibilizar à CONTRATANTE o acesso ao Sistema e aos módulos contratados, em perfeitas condições de funcionamento;",
+   "b) manter o Sistema hospedado em infraestrutura adequada, com mecanismos de segurança da informação compatíveis com as boas práticas de mercado;",
+   "c) realizar cópias de segurança (backup) periódicas dos Dados da CONTRATANTE, com periodicidade mínima diária;",
+   "d) prestar o suporte técnico nos termos da Cláusula Sétima;",
+   "e) disponibilizar as atualizações, correções e melhorias do Sistema sem custo adicional;",
+   "f) manter sigilo sobre os Dados da CONTRATANTE, nos termos da Cláusula Décima;",
+   "g) comunicar à CONTRATANTE, com antecedência razoável, qualquer alteração relevante no Sistema que possa afetar sua utilização;",
+   "h) emitir as notas fiscais correspondentes aos pagamentos recebidos."]}]},
+ {"titulo":"CLÁUSULA NONA – DAS OBRIGAÇÕES DA CONTRATANTE","texto":"","subclausulas":[
+  {"texto":"Sem prejuízo das demais obrigações previstas neste Contrato, constituem obrigações da CONTRATANTE:","itens":[
+   "a) efetuar pontualmente o pagamento das mensalidades;",
+   "b) utilizar o Sistema exclusivamente para suas atividades internas, em conformidade com a legislação vigente e com este Contrato;",
+   "c) manter a confidencialidade das credenciais de acesso de seus Usuários, responsabilizando-se por todas as operações realizadas com tais credenciais;",
+   "d) responsabilizar-se pela veracidade, legalidade e exatidão dos dados inseridos no Sistema;",
+   "e) dispor de equipamentos e conexão à internet adequados à utilização do Sistema;",
+   "f) comunicar à CONTRATADA, de imediato, qualquer falha, uso indevido ou acesso não autorizado de que tenha conhecimento;",
+   "g) não ceder, sublicenciar, alugar, emprestar ou de qualquer forma disponibilizar o Sistema a terceiros;",
+   "h) não praticar engenharia reversa, descompilação, cópia ou modificação do Sistema, nem tentar acessar seu código-fonte."]}]},
+ {"titulo":"CLÁUSULA DÉCIMA – DA CONFIDENCIALIDADE","texto":"","subclausulas":[
+  {"texto":"As PARTES obrigam-se a manter sigilo sobre todas as informações confidenciais a que tiverem acesso em razão deste Contrato, incluindo dados comerciais, técnicos, financeiros e operacionais, não podendo divulgá-las a terceiros sem prévia autorização por escrito da outra PARTE.","itens":[]},
+  {"texto":"Não serão consideradas confidenciais as informações que: (a) sejam ou se tornem de domínio público sem culpa da PARTE receptora; (b) já fossem de conhecimento da PARTE receptora antes da sua divulgação; ou (c) devam ser reveladas por determinação legal ou judicial, hipótese em que a PARTE obrigada deverá comunicar a outra previamente, sempre que possível.","itens":[]},
+  {"texto":"A obrigação de confidencialidade permanecerá em vigor durante a vigência deste Contrato e por 5 (cinco) anos após o seu término.","itens":[]}]},
+ {"titulo":"CLÁUSULA DÉCIMA PRIMEIRA – DA PROTEÇÃO DE DADOS PESSOAIS (LGPD)","texto":"","subclausulas":[
+  {"texto":"As PARTES comprometem-se a cumprir a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais – LGPD) e demais normas aplicáveis.","itens":[]},
+  {"texto":"Para os fins deste Contrato, a CONTRATANTE figura como Controladora e a CONTRATADA como Operadora dos dados pessoais inseridos no Sistema, especialmente dados de empregados, terceiros e visitantes tratados nos módulos contratados.","itens":[]},
+  {"texto":"A CONTRATADA obriga-se a: (a) tratar os dados pessoais exclusivamente conforme as instruções da CONTRATANTE e para a execução deste Contrato; (b) adotar medidas técnicas e administrativas aptas a proteger os dados pessoais de acessos não autorizados e de situações acidentais ou ilícitas de destruição, perda, alteração ou difusão; (c) comunicar à CONTRATANTE, em até 48 (quarenta e oito) horas, qualquer incidente de segurança que possa acarretar risco ou dano relevante aos titulares; (d) auxiliar a CONTRATANTE no atendimento às solicitações dos titulares de dados; e (e) não compartilhar os dados pessoais com terceiros, salvo subcontratados necessários à prestação do serviço (como provedores de hospedagem), que deverão observar as mesmas obrigações.","itens":[]},
+  {"texto":"A CONTRATANTE declara possuir base legal adequada para o tratamento dos dados pessoais que inserir no Sistema, responsabilizando-se por sua licitude.","itens":[]},
+  {"texto":"Dados pessoais sensíveis, como informações de saúde ocupacional, deverão ser tratados com nível reforçado de segurança, nos termos da LGPD.","itens":[]}]},
+ {"titulo":"CLÁUSULA DÉCIMA SEGUNDA – DA PROPRIEDADE INTELECTUAL E DOS DADOS","texto":"","subclausulas":[
+  {"texto":"O Sistema, incluindo seu código-fonte, banco de dados estrutural, layout, marcas, documentação e quaisquer atualizações, é de propriedade exclusiva da CONTRATADA, nos termos da Lei nº 9.609/1998, não implicando este Contrato qualquer cessão ou transferência de direitos de propriedade intelectual à CONTRATANTE.","itens":[]},
+  {"texto":"Os Dados da CONTRATANTE são e permanecerão de sua exclusiva propriedade, sendo vedado à CONTRATADA utilizá-los para finalidade diversa da execução deste Contrato.","itens":[]},
+  {"texto":"Em caso de término do Contrato, por qualquer motivo, a CONTRATADA disponibilizará à CONTRATANTE, mediante solicitação formulada em até 30 (trinta) dias do término, a exportação dos Dados da CONTRATANTE em formato eletrônico de uso corrente (como .xlsx, .csv ou .pdf). Decorrido esse prazo, a CONTRATADA poderá eliminar definitivamente os dados, ressalvadas as hipóteses de guarda obrigatória previstas em lei.","itens":[]}]},
+ {"titulo":"CLÁUSULA DÉCIMA TERCEIRA – DA RESCISÃO","texto":"","subclausulas":[
+  {"texto":"O presente Contrato poderá ser rescindido:","itens":[
+   "a) por qualquer das PARTES, imotivadamente, mediante notificação por escrito com antecedência mínima de 30 (trinta) dias, sendo devidas as mensalidades até o término do aviso prévio, [MULTA_RESCISORIA];",
+   "b) por qualquer das PARTES, de pleno direito, em caso de descumprimento de qualquer cláusula contratual não sanado no prazo de 15 (quinze) dias contados do recebimento de notificação da PARTE prejudicada;",
+   "c) pela CONTRATADA, na hipótese prevista no item 4.4;",
+   "d) por qualquer das PARTES, em caso de decretação de falência, recuperação judicial ou extrajudicial ou dissolução da outra PARTE."]},
+  {"texto":"A rescisão não exime as PARTES do cumprimento das obrigações vencidas até a data de sua efetivação, nem das obrigações de confidencialidade, proteção de dados e devolução de dados, que subsistirão ao término do Contrato.","itens":[]}]},
+ {"titulo":"CLÁUSULA DÉCIMA QUARTA – DA LIMITAÇÃO DE RESPONSABILIDADE","texto":"","subclausulas":[
+  {"texto":"A CONTRATADA não será responsável por: (a) danos decorrentes do uso inadequado do Sistema pela CONTRATANTE ou por seus Usuários; (b) dados incorretos ou incompletos inseridos pela CONTRATANTE; (c) decisões técnicas, legais ou administrativas tomadas pela CONTRATANTE com base nas informações registradas no Sistema; e (d) lucros cessantes ou danos indiretos.","itens":[]},
+  {"texto":"O Sistema constitui ferramenta de apoio à gestão, não substituindo a responsabilidade técnica e legal da CONTRATANTE e de seus profissionais habilitados pelo cumprimento das Normas Regulamentadoras (NRs), da legislação ambiental e de segurança e saúde no trabalho.","itens":[]},
+  {"texto":"A responsabilidade total da CONTRATADA por danos diretos comprovadamente decorrentes deste Contrato fica limitada ao valor correspondente a 12 (doze) mensalidades, ressalvados os casos de dolo ou culpa grave e as hipóteses em que a legislação vedar tal limitação.","itens":[]}]},
+ {"titulo":"CLÁUSULA DÉCIMA QUINTA – DO CASO FORTUITO E DA FORÇA MAIOR","texto":"","subclausulas":[
+  {"texto":"Nenhuma das PARTES será responsabilizada pelo descumprimento de suas obrigações quando decorrente de caso fortuito ou força maior, nos termos do artigo 393 do Código Civil, devendo a PARTE afetada comunicar a outra tão logo tome conhecimento do evento.","itens":[]}]},
+ {"titulo":"CLÁUSULA DÉCIMA SEXTA – DAS DISPOSIÇÕES GERAIS","texto":"","subclausulas":[
+  {"texto":"Integra o presente Contrato, como Anexo I, a Proposta Comercial nº [PROPOSTA_NUMERO], emitida em [PROPOSTA_DATA]. Em caso de conflito entre o Contrato e a Proposta, prevalecerão as disposições deste Contrato.","itens":[]},
+  {"texto":"Qualquer alteração deste Contrato somente terá validade se formalizada por termo aditivo assinado pelas PARTES.","itens":[]},
+  {"texto":"A tolerância de uma PARTE quanto ao descumprimento de qualquer obrigação pela outra não importará novação, renúncia ou alteração do pactuado.","itens":[]},
+  {"texto":"Nenhuma das PARTES poderá ceder ou transferir os direitos e obrigações deste Contrato sem prévia anuência por escrito da outra PARTE.","itens":[]},
+  {"texto":"As PARTES declaram que não existe entre elas qualquer vínculo empregatício, societário ou de representação, sendo cada uma responsável por seus próprios encargos trabalhistas, previdenciários e tributários.","itens":[]},
+  {"texto":"As comunicações entre as PARTES serão realizadas por escrito, sendo válidas as enviadas aos endereços eletrônicos indicados na qualificação das PARTES, que deverão manter seus dados de contato atualizados.","itens":[]},
+  {"texto":"Se qualquer disposição deste Contrato for considerada nula ou inexequível, as demais disposições permanecerão válidas e em pleno vigor.","itens":[]},
+  {"texto":"As PARTES reconhecem a validade da assinatura deste Contrato por meio eletrônico, nos termos da Medida Provisória nº 2.200-2/2001 e da Lei nº 14.063/2020, admitindo como válido qualquer meio de comprovação da autoria e integridade do documento.","itens":[]}]},
+ {"titulo":"CLÁUSULA DÉCIMA SÉTIMA – DO FORO","texto":"","subclausulas":[
+  {"texto":"Fica eleito o foro da [FORO] para dirimir quaisquer dúvidas ou controvérsias oriundas deste Contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.","itens":[]}]}
+]
