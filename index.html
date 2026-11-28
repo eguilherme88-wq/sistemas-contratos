@@ -718,10 +718,26 @@
         </div>
 
         <div class="border-t border-slate-200 pt-7 space-y-5">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-slate-900">Assinatura Eletrônica — Autentique</h3><p class="text-xs text-slate-500 mt-1">Os dados de contratante e contratada são preenchidos automaticamente a partir dos cadastros. Ao enviar, o contrato é salvo, convertido em PDF e enviado ao Autentique, que dispara o convite de assinatura por e-mail a cada signatário.</p></div><button type="button" id="addSignatario" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold px-4 py-2.5 rounded-xl text-xs">＋ Adicionar signatário</button></div>
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3"><div><h3 class="text-lg font-bold text-slate-900">Assinatura Eletrônica</h3><p class="text-xs text-slate-500 mt-1" id="assinaturaAjuda">Os dados de contratante e contratada são preenchidos automaticamente a partir dos cadastros. Ao enviar, o contrato é salvo, convertido em PDF e enviado ao Autentique, que dispara o convite de assinatura por e-mail a cada signatário.</p></div><button type="button" id="addSignatario" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold px-4 py-2.5 rounded-xl text-xs">＋ Adicionar signatário</button></div>
+          <div class="flex flex-wrap items-center gap-3" role="radiogroup" aria-label="Forma de assinatura">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-600">Forma de assinatura</span>
+            <label class="forma-assinatura cursor-pointer flex items-center gap-2 border border-slate-200 bg-white rounded-xl px-4 py-2.5 text-sm font-semibold"><input type="radio" name="formaAssinatura" value="autentique" checked> Autentique <span class="text-xs font-normal text-slate-500">(envio automático por e-mail)</span></label>
+            <label class="forma-assinatura cursor-pointer flex items-center gap-2 border border-slate-200 bg-white rounded-xl px-4 py-2.5 text-sm font-semibold"><input type="radio" name="formaAssinatura" value="govbr"> gov.br <span class="text-xs font-normal text-slate-500">(Assinador do governo)</span></label>
+          </div>
           <div id="signatarios" class="space-y-3"></div>
+          <div id="painelAutentique" class="space-y-5">
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4"><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2" for="autentiqueEndpoint">Servidor de integração</label><input id="autentiqueEndpoint" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="/api/autentique"></div><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2" for="autentiqueChave">Chave do servidor (se houver)</label><input id="autentiqueChave" type="password" autocomplete="off" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="INTEGRACAO_CHAVE"></div><div><label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Situação</label><div id="assinaturaStatus" class="bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-600">Não enviado</div></div><p class="md:col-span-3 text-xs text-slate-500">O token da API do Autentique fica apenas no servidor de integração, nunca neste navegador. Sem servidor configurado, o envio para assinatura fica desativado.</p></div>
           <div class="flex flex-wrap justify-end gap-3"><button type="button" id="atualizarAutentique" class="hidden bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-5 py-3 rounded-xl text-sm disabled:opacity-50">↻ Atualizar status</button><button type="button" id="baixarAssinado" class="hidden bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold px-5 py-3 rounded-xl text-sm">Baixar PDF assinado</button><button type="button" id="abrirAutentique" class="hidden bg-slate-900 hover:bg-slate-800 text-white font-bold px-5 py-3 rounded-xl text-sm">Abrir no Autentique ↗</button><button type="button" id="enviarAutentique" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl text-sm shadow-md disabled:opacity-50">✉ Enviar para assinatura no Autentique</button></div>
+          </div>
+          <div id="painelGovbr" class="space-y-4" style="display:none">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3"><div class="text-sm text-slate-600">Assinatura eletrônica avançada pela conta <b>gov.br</b> (nível prata ou ouro), com validade pela Lei nº 14.063/2020. Cada parte assina o <b>mesmo arquivo</b> no Assinador gov.br.</div><div><span class="text-xs font-bold uppercase tracking-wider text-slate-600 mr-2">Situação</span><span id="govSituacao" class="inline-block bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-600">Não iniciado</span></div></div>
+            <ol class="space-y-3">
+              <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="1"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">1. Gere o PDF e assine no gov.br</b><p class="text-xs text-slate-500 mt-1">O contrato é salvo e baixado em PDF. No Assinador, entre com a sua conta gov.br, envie esse PDF, posicione a assinatura e baixe o arquivo assinado.</p></div><div class="flex flex-wrap gap-2"><button type="button" id="govGerarPdf" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">⬇ Gerar PDF do contrato</button><a href="https://assinador.iti.br" target="_blank" rel="noopener" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl text-sm">Abrir Assinador gov.br ↗</a></div></div></li>
+              <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="2"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">2. Envie aqui o PDF assinado por você</b><p class="text-xs text-slate-500 mt-1" id="govInfoContratada">Selecione o arquivo baixado do Assinador gov.br (PDF).</p></div><div class="flex flex-wrap gap-2"><label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm">⬆ Enviar PDF assinado por mim<input type="file" id="govArquivoContratada" accept="application/pdf,.pdf" class="hidden"></label><button type="button" id="govBaixarContratada" class="hidden bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm">⬇ Baixar</button></div></div></li>
+              <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="3"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">3. Envie para a contratante assinar</b><p class="text-xs text-slate-500 mt-1" id="govInfoEnvio">A mensagem já vai com as instruções. Anexe o PDF assinado por você (no e-mail e no WhatsApp o anexo é feito por você; "Compartilhar" já leva o arquivo, quando o aparelho permite).</p></div><div class="flex flex-wrap gap-2"><button type="button" id="govEmail" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">✉ E-mail (Gmail)</button><button type="button" id="govWhatsapp" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">💬 WhatsApp</button><button type="button" id="govCompartilhar" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">↗ Compartilhar arquivo</button></div></div></li>
+              <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="4"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">4. Envie aqui o PDF assinado por ambos</b><p class="text-xs text-slate-500 mt-1" id="govInfoFinal">Quando a contratante devolver o arquivo com as duas assinaturas, envie aqui. O contrato passa para "Ativo".</p></div><div class="flex flex-wrap gap-2"><label class="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm">⬆ Enviar PDF assinado por ambos<input type="file" id="govArquivoFinal" accept="application/pdf,.pdf" class="hidden"></label><button type="button" id="govBaixarFinal" class="hidden bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold px-4 py-2.5 rounded-xl text-sm">⬇ Baixar PDF assinado</button><a href="https://validar.iti.gov.br" target="_blank" rel="noopener" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm">Validar no ITI ↗</a></div></div></li>
+            </ol>
+          </div>
         </div>
 
         <div class="flex items-center justify-end gap-4 pt-4 border-t border-slate-200 acoes-form">
@@ -1696,7 +1712,112 @@ function atualizarPainelAssinatura(x={}){
   $('atualizarAutentique').classList.toggle('hidden',!x.autentiqueId);
   const bx=$('baixarAssinado');bx.classList.toggle('hidden',!x.autentiqueAssinadoUrl);if(x.autentiqueAssinadoUrl)bx.dataset.url=x.autentiqueAssinadoUrl;else delete bx.dataset.url;
   $('enviarAutentique').textContent=x.autentiqueId?'✉ Reenviar como novo documento':'✉ Enviar para assinatura no Autentique';
+  definirFormaAssinatura(x.formaAssinatura||'autentique');
+  renderGovbr(x);
 }
+
+/* ---------- Assinatura pelo gov.br (manual, pelo Assinador do ITI) ----------
+   O gov.br só oferece integração automática para sistemas públicos; aqui o sistema conduz o processo:
+   gera o PDF, guarda a versão assinada pela contratada, prepara o envio para a contratante
+   e recebe o arquivo final assinado por ambos (guardado no Firestore, em arquivos/gov_<id>_<etapa>). */
+function formaAssinaturaAtual(){return document.querySelector('input[name="formaAssinatura"]:checked')?.value||'autentique'}
+function definirFormaAssinatura(f){
+  const r=document.querySelector(`input[name="formaAssinatura"][value="${f}"]`);if(r)r.checked=true;
+  const gov=f==='govbr';
+  $('painelAutentique').style.display=gov?'none':'';$('painelGovbr').style.display=gov?'':'none';
+  document.querySelectorAll('.forma-assinatura').forEach(l=>{const on=l.querySelector('input').checked;l.classList.toggle('border-blue-500',on);l.classList.toggle('bg-blue-50',on)});
+  $('assinaturaAjuda').textContent=gov?'Os signatários servem como destinatários do envio. A assinatura é feita por cada parte no Assinador gov.br, sobre o mesmo arquivo PDF; o sistema guarda as versões assinadas.':'Os dados de contratante e contratada são preenchidos automaticamente a partir dos cadastros. Ao enviar, o contrato é salvo, convertido em PDF e enviado ao Autentique, que dispara o convite de assinatura por e-mail a cada signatário.';
+}
+function contratoEmEdicao(){return contratos.find(x=>x.id===$('id').value)||null}
+function renderGovbr(x){
+  const g=x?.govbr||{},fmt=a=>a?`${a.nome} · ${(a.tamanho/1024).toFixed(0)} KB · ${a.assinaturas} assinatura(s) digital(is) · ${new Date(a.em).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:'';
+  $('govSituacao').textContent=g.final?'Assinado por todos (gov.br)':g.enviadoEm?'Aguardando a contratante':g.contratada?'Assinado pela contratada':g.pdfGeradoEm?'PDF gerado':'Não iniciado';
+  $('govInfoContratada').textContent=g.contratada?'✔ '+fmt(g.contratada):'Selecione o arquivo baixado do Assinador gov.br (PDF).';
+  $('govBaixarContratada').classList.toggle('hidden',!g.contratada);
+  $('govInfoFinal').textContent=g.final?'✔ '+fmt(g.final):'Quando a contratante devolver o arquivo com as duas assinaturas, envie aqui. O contrato passa para "Ativo".';
+  $('govBaixarFinal').classList.toggle('hidden',!g.final);
+  ['govEmail','govWhatsapp','govCompartilhar'].forEach(id=>$(id).disabled=!g.contratada);
+  if(g.enviadoEm)$('govInfoEnvio').textContent=`Enviado em ${new Date(g.enviadoEm).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}. Anexe o PDF assinado por você, se ainda não anexou.`;
+  document.querySelectorAll('.gov-etapa').forEach(li=>{const e=+li.dataset.etapa,feito=e===1?!!(g.pdfGeradoEm||g.contratada):e===2?!!g.contratada:e===3?!!g.enviadoEm:!!g.final;li.classList.toggle('border-emerald-300',feito);li.classList.toggle('bg-emerald-50/40',feito)});
+}
+function baixarBlob(blob,nome){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+function nomeArquivoGov(c,sufixo){return `${(c.numero||'contrato').replace(/[^\w-]+/g,'_')}${sufixo?'_'+sufixo:''}.pdf`}
+// Conta as assinaturas digitais embutidas no PDF (cada assinatura PAdES tem um /ByteRange)
+async function contarAssinaturasPdf(arquivo){try{const t=new TextDecoder('latin1').decode(new Uint8Array(await arquivo.arrayBuffer()));return (t.match(/\/ByteRange\s*\[/g)||[]).length}catch(e){return 0}}
+function salvarGovbr(c,mudancas){c.govbr={...(c.govbr||{}),...mudancas};c.formaAssinatura='govbr';c.atualizado=Date.now();save();renderGovbr(c);render()}
+async function govGerarPdf(){
+  const c=persistirContrato();if(!c)return;
+  const b=$('govGerarPdf');b.disabled=true;b.textContent='Gerando...';
+  try{
+    c.formaAssinatura='govbr';
+    const b64=await gerarPdfContrato(c),bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));
+    baixarBlob(new Blob([bytes],{type:'application/pdf'}),nomeArquivoGov(c));
+    salvarGovbr(c,{pdfGeradoEm:new Date().toISOString()});
+    toast('PDF baixado. Agora abra o Assinador gov.br, assine e envie o arquivo assinado na etapa 2.');
+  }catch(e){toast('Não foi possível gerar o PDF: '+e.message)}
+  finally{b.disabled=false;b.textContent='⬇ Gerar PDF do contrato'}
+}
+async function govEnviarArquivo(input,etapa){
+  const f=input.files[0];input.value='';if(!f)return;
+  if(!/\.pdf$/i.test(f.name)&&f.type!=='application/pdf')return toast('Selecione um arquivo PDF.');
+  if(f.size>20*1024*1024)return toast('O PDF passou de 20 MB.');
+  const c=contratoEmEdicao()||persistirContrato();if(!c)return;
+  const n=await contarAssinaturasPdf(f);
+  if(etapa==='contratada'&&n<1&&!confirm('Não encontrei assinatura digital neste PDF. Ele foi baixado do Assinador gov.br depois de assinado? Enviar mesmo assim?'))return;
+  if(etapa==='final'&&n<2&&!confirm(`Encontrei ${n} assinatura(s) digital(is) neste PDF; o esperado são pelo menos 2 (você e a contratante). Enviar mesmo assim?`))return;
+  toast('Enviando o arquivo...');
+  try{await arquivoOp('guardar',`gov_${c.id}_${etapa}`,f)}catch(e){return toast('Falha ao enviar o arquivo: '+traduzErro(e))}
+  const info={nome:f.name,tamanho:f.size,assinaturas:n,em:new Date().toISOString()};
+  if(etapa==='final'){c.status='Ativo';$('status').value='Ativo';c.assinaturaStatus='Assinado por todos (gov.br)';salvarGovbr(c,{final:info});toast('Contrato assinado por ambos. Status alterado para Ativo.')}
+  else{salvarGovbr(c,{contratada:info});toast('PDF assinado por você guardado. Agora envie para a contratante (etapa 3).')}
+}
+async function govBaixar(etapa,c=contratoEmEdicao()){
+  if(!c)return;
+  try{const f=await arquivoOp('ler',`gov_${c.id}_${etapa}`);if(!f)return toast('Arquivo não encontrado.');baixarBlob(f,c.govbr?.[etapa]?.nome||nomeArquivoGov(c,etapa==='final'?'assinado':'assinado_contratada'))}
+  catch(e){toast('Falha ao baixar o arquivo: '+traduzErro(e))}
+}
+function mensagemGovbr(c){
+  return `Olá${c.contratante?', '+c.contratante:''}!\n\nSegue o contrato nº ${c.numero}${c.nome?' — '+c.nome:''}, já assinado por ${c.contratada||'nós'} pelo gov.br.\n\nPara assinar:\n1. Baixe o PDF anexo.\n2. Acesse https://assinador.iti.br e entre com a conta gov.br do representante (nível prata ou ouro).\n3. Envie o mesmo PDF, posicione a assinatura e autorize pelo aplicativo gov.br.\n4. Baixe o PDF assinado e nos devolva respondendo esta mensagem.\n\nImportante: assine o arquivo que enviamos (sem editar, imprimir ou converter), para manter as duas assinaturas.\nAs assinaturas podem ser conferidas em https://validar.iti.gov.br.\n\nObrigado!`;
+}
+function destinoContratante(){const s=lerSignatarios().find(x=>x.papel==='Contratante')||{};return {email:s.email||'',telefone:$('telefoneContratante').value||''}}
+function govMarcarEnviado(c){if(!c.govbr?.enviadoEm)salvarGovbr(c,{enviadoEm:new Date().toISOString()})}
+async function govEmail(){
+  const c=contratoEmEdicao();if(!c?.govbr?.contratada)return;
+  await govBaixar('contratada',c);
+  const d=destinoContratante(),u=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(d.email)}&su=${encodeURIComponent('Contrato nº '+c.numero+' para assinatura (gov.br)')}&body=${encodeURIComponent(mensagemGovbr(c))}`;
+  window.open(u,'_blank','noopener');govMarcarEnviado(c);
+  toast('O PDF foi baixado: anexe-o no e-mail antes de enviar.');
+}
+async function govWhatsapp(){
+  const c=contratoEmEdicao();if(!c?.govbr?.contratada)return;
+  await govBaixar('contratada',c);
+  let n=String(destinoContratante().telefone).replace(/\D/g,'');if(n&&n.length<=11)n='55'+n;
+  window.open(`https://wa.me/${n}?text=${encodeURIComponent(mensagemGovbr(c))}`,'_blank','noopener');govMarcarEnviado(c);
+  toast('O PDF foi baixado: anexe-o na conversa do WhatsApp.');
+}
+async function govCompartilhar(){
+  const c=contratoEmEdicao();if(!c?.govbr?.contratada)return;
+  try{
+    const b=await arquivoOp('ler',`gov_${c.id}_contratada`);if(!b)return toast('Arquivo não encontrado.');
+    const arq=new File([b],c.govbr.contratada.nome||nomeArquivoGov(c,'assinado_contratada'),{type:'application/pdf'});
+    if(!navigator.canShare||!navigator.canShare({files:[arq]}))return toast('Este aparelho não compartilha arquivos direto. Use E-mail ou WhatsApp e anexe o PDF.');
+    await navigator.share({files:[arq],title:'Contrato nº '+c.numero,text:mensagemGovbr(c)});govMarcarEnviado(c);
+  }catch(e){if(e.name!=='AbortError')toast('Não foi possível compartilhar: '+e.message)}
+}
+document.addEventListener('change',e=>{
+  if(e.target.name==='formaAssinatura'){definirFormaAssinatura(e.target.value);const c=contratoEmEdicao();if(c)renderGovbr(c)}
+  if(e.target.id==='govArquivoContratada')govEnviarArquivo(e.target,'contratada');
+  if(e.target.id==='govArquivoFinal')govEnviarArquivo(e.target,'final');
+});
+document.addEventListener('click',e=>{
+  const id=e.target.closest('button')?.id;
+  if(id==='govGerarPdf')govGerarPdf();
+  else if(id==='govBaixarContratada')govBaixar('contratada');
+  else if(id==='govBaixarFinal')govBaixar('final');
+  else if(id==='govEmail')govEmail();
+  else if(id==='govWhatsapp')govWhatsapp();
+  else if(id==='govCompartilhar')govCompartilhar();
+});
 function comPrazo(promessa,ms,msg){let t;return Promise.race([promessa,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error(msg)),ms)})]).finally(()=>clearTimeout(t))}
 var configAutentique=null;
 // Guarda no banco o servidor e a chave usados com sucesso, para os outros aparelhos já virem configurados
@@ -1777,7 +1898,8 @@ async function consultarAutentique(silencioso=false){
 }
 
 async function baixarAssinadoLista(id,btn){
-  const c=contratos.find(x=>x.id===id);if(!c?.autentiqueId)return toast('Este contrato não foi assinado pelo Autentique.');
+  const c0=contratos.find(x=>x.id===id);if(c0?.govbr?.final)return govBaixar('final',c0);
+  const c=c0;if(!c?.autentiqueId)return toast('Este contrato não foi assinado pelo Autentique.');
   // garante endpoint/chave salvos mesmo sem o formulário aberto
   if(!$('autentiqueEndpoint').value)$('autentiqueEndpoint').value=normalizarBaseAutentique(localStorage.getItem('autentiqueEndpoint'));
   if(!$('autentiqueChave').value)$('autentiqueChave').value=localStorage.getItem('autentiqueChave')||'';
@@ -1864,7 +1986,7 @@ async function gerarPdfContrato(x){
     });
     r.st.y+=2;
   });
-  r.paragrafo('E por estarem justos e contratados, assinam o presente instrumento eletronicamente, por meio da plataforma Autentique.',{primeira:12,depois:10});
+  r.paragrafo(x.formaAssinatura==='govbr'?'E por estarem justos e contratados, assinam o presente instrumento eletronicamente, por meio do Assinador gov.br (assinatura eletrônica avançada, Lei nº 14.063/2020).':'E por estarem justos e contratados, assinam o presente instrumento eletronicamente, por meio da plataforma Autentique.',{primeira:12,depois:10});
   r.paragrafo(`${localContrato(x)}, ${new Date().toLocaleDateString('pt-BR')}.`,{alinhar:'center',depois:18});
   const partes=[[x.contratante,'CONTRATANTE'],[x.contratada,'CONTRATADA'],...(x.signatarios||[]).filter(s=>s.papel==='Testemunha'&&s.nome).map(s=>[s.nome,'TESTEMUNHA'])];
   r.assinaturas(partes);
@@ -2134,11 +2256,12 @@ function objetoContrato(){
     foro:$('foro').value,
     vals:values(),
     signatarios:lerSignatarios(),
-    assinaturaStatus:$('assinaturaStatus')?.textContent||'Não enviado',
+    assinaturaStatus:formaAssinaturaAtual()==='govbr'?($('govSituacao')?.textContent||'Não iniciado'):($('assinaturaStatus')?.textContent||'Não enviado'),
     autentiqueUrl:$('abrirAutentique')?.dataset.url||'',
     clausulas:modelo.map(x=>({...x})),
     ...(propostaEmEdicao?{propostaId:propostaEmEdicao.id,propostaNumero:propostaEmEdicao.numero}:{}),
     ...(dadosPropostaEditor?{dadosProposta:dadosPropostaEditor}:{}),
+    formaAssinatura:formaAssinaturaAtual(),
     atualizado:Date.now()
   };
 }
@@ -2223,6 +2346,8 @@ function visualizar(id){
 function excluir(id){
   if(!pode('contratos','excluir'))return toast('Você não possui permissão para excluir contratos.');
   if(confirm('Tem certeza que deseja excluir este contrato?')){
+    const alvo=contratos.find(x=>x.id===id);
+    if(alvo?.govbr){['contratada','final'].forEach(et=>{if(alvo.govbr[et])arquivoOp('excluir',`gov_${id}_${et}`).catch(()=>{})})}
     contratos=contratos.filter(x=>x.id!==id);
     save();
     render();
@@ -2283,7 +2408,7 @@ function tabela(id,a){
       <td class="py-4 px-6 text-right space-x-2">
         ${(ver&&!(x.status==='Ativo'&&x.autentiqueId))?`<button class="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all view" data-id="${esc(x.id)}">Ver</button>`:''}
         ${editarPerm?`<button class="text-slate-600 hover:text-slate-900 font-bold text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-all edit" data-id="${esc(x.id)}">Editar</button>`:''}
-        ${(ver&&x.status==='Ativo'&&x.autentiqueId)?`<button class="text-violet-700 hover:text-violet-900 font-bold text-xs bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-all baixar-assinado-lista" data-id="${esc(x.id)}" title="Baixar o PDF com as assinaturas do Autentique">PDF assinado</button>`:''}
+        ${(ver&&x.status==='Ativo'&&(x.autentiqueId||x.govbr?.final))?`<button class="text-violet-700 hover:text-violet-900 font-bold text-xs bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-all baixar-assinado-lista" data-id="${esc(x.id)}" title="${x.govbr?.final?'Baixar o PDF assinado pelo gov.br':'Baixar o PDF com as assinaturas do Autentique'}">PDF assinado</button>`:''}
         ${(editarPerm&&x.status==='Ativo')?`<button class="text-emerald-700 hover:text-emerald-900 font-bold text-xs bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-all gerar-aditivo" data-id="${esc(x.id)}">Aditivo</button>`:''}
         ${excluirPerm?`<button class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all delete-contract" data-id="${esc(x.id)}">Excluir</button>`:''}
       </td>
