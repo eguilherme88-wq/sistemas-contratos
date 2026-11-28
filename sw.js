@@ -5,7 +5,7 @@
  *  - não intercepta Firebase, CDNs nem nenhum outro endereço externo.
  */
 const PREFIXO = 'partner-contratos-';
-const VERSAO = 'v2';
+const VERSAO = 'v3';
 const CACHE = PREFIXO + VERSAO;
 const ESCOPO = self.registration.scope;
 const ARQUIVOS = [

@@ -734,7 +734,7 @@
             <ol class="space-y-3">
               <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="1"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">1. Gere o PDF e assine no gov.br</b><p class="text-xs text-slate-500 mt-1">O contrato é salvo e baixado em PDF. No Assinador, entre com a sua conta gov.br, envie esse PDF, posicione a assinatura e baixe o arquivo assinado.</p></div><div class="flex flex-wrap gap-2"><button type="button" id="govGerarPdf" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">⬇ Gerar PDF do contrato</button><a href="https://assinador.iti.br" target="_blank" rel="noopener" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl text-sm">Abrir Assinador gov.br ↗</a></div></div></li>
               <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="2"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">2. Envie aqui o PDF assinado por você</b><p class="text-xs text-slate-500 mt-1" id="govInfoContratada">Selecione o arquivo baixado do Assinador gov.br (PDF).</p></div><div class="flex flex-wrap gap-2"><label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm">⬆ Enviar PDF assinado por mim<input type="file" id="govArquivoContratada" accept="application/pdf,.pdf" class="hidden"></label><button type="button" id="govBaixarContratada" class="hidden bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm">⬇ Baixar</button></div></div></li>
-              <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="3"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">3. Envie para a contratante assinar</b><p class="text-xs text-slate-500 mt-1" id="govInfoEnvio">A mensagem já vai com as instruções. Anexe o PDF assinado por você (no e-mail e no WhatsApp o anexo é feito por você; "Compartilhar" já leva o arquivo, quando o aparelho permite).</p></div><div class="flex flex-wrap gap-2"><button type="button" id="govEmail" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">✉ E-mail (Gmail)</button><button type="button" id="govWhatsapp" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">💬 WhatsApp</button><button type="button" id="govCompartilhar" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">↗ Compartilhar arquivo</button></div></div></li>
+              <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="3"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">3. Envie para a contratante assinar</b><p class="text-xs text-slate-500 mt-1" id="govInfoEnvio">A mensagem já vai com as instruções e um link seguro para a contratante baixar o PDF assinado por você (válido por 60 dias). Não precisa anexar nada.</p></div><div class="flex flex-wrap gap-2"><button type="button" id="govEmail" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">✉ E-mail (Gmail)</button><button type="button" id="govWhatsapp" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">💬 WhatsApp</button><button type="button" id="govCopiarLink" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">🔗 Copiar link</button><button type="button" id="govCompartilhar" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-50">↗ Compartilhar arquivo</button></div></div></li>
               <li class="gov-etapa bg-white border border-slate-200 rounded-xl p-4" data-etapa="4"><div class="flex flex-wrap items-center justify-between gap-3"><div><b class="text-slate-900">4. Envie aqui o PDF assinado por ambos</b><p class="text-xs text-slate-500 mt-1" id="govInfoFinal">Quando a contratante devolver o arquivo com as duas assinaturas, envie aqui. O contrato passa para "Ativo".</p></div><div class="flex flex-wrap gap-2"><label class="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm">⬆ Enviar PDF assinado por ambos<input type="file" id="govArquivoFinal" accept="application/pdf,.pdf" class="hidden"></label><button type="button" id="govBaixarFinal" class="hidden bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold px-4 py-2.5 rounded-xl text-sm">⬇ Baixar PDF assinado</button><a href="https://validar.iti.gov.br" target="_blank" rel="noopener" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm">Validar no ITI ↗</a></div></div></li>
             </ol>
           </div>
@@ -1736,8 +1736,8 @@ function renderGovbr(x){
   $('govBaixarContratada').classList.toggle('hidden',!g.contratada);
   $('govInfoFinal').textContent=g.final?'✔ '+fmt(g.final):'Quando a contratante devolver o arquivo com as duas assinaturas, envie aqui. O contrato passa para "Ativo".';
   $('govBaixarFinal').classList.toggle('hidden',!g.final);
-  ['govEmail','govWhatsapp','govCompartilhar'].forEach(id=>$(id).disabled=!g.contratada);
-  if(g.enviadoEm)$('govInfoEnvio').textContent=`Enviado em ${new Date(g.enviadoEm).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}. Anexe o PDF assinado por você, se ainda não anexou.`;
+  ['govEmail','govWhatsapp','govCopiarLink','govCompartilhar'].forEach(id=>$(id).disabled=!g.contratada);
+  $('govInfoEnvio').textContent=g.enviadoEm?`Enviado em ${new Date(g.enviadoEm).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}.${g.link?.expiraEm?' Link válido até '+new Date(g.link.expiraEm).toLocaleDateString('pt-BR')+'.':''}`:'A mensagem já vai com as instruções e um link seguro para a contratante baixar o PDF assinado por você (válido por 60 dias). Não precisa anexar nada.';
   document.querySelectorAll('.gov-etapa').forEach(li=>{const e=+li.dataset.etapa,feito=e===1?!!(g.pdfGeradoEm||g.contratada):e===2?!!g.contratada:e===3?!!g.enviadoEm:!!g.final;li.classList.toggle('border-emerald-300',feito);li.classList.toggle('bg-emerald-50/40',feito)});
 }
 function baixarBlob(blob,nome){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
@@ -1768,7 +1768,7 @@ async function govEnviarArquivo(input,etapa){
   toast('Enviando o arquivo...');
   try{await arquivoOp('guardar',`gov_${c.id}_${etapa}`,f)}catch(e){return toast('Falha ao enviar o arquivo: '+traduzErro(e))}
   const info={nome:f.name,tamanho:f.size,assinaturas:n,em:new Date().toISOString()};
-  if(etapa==='final'){c.status='Ativo';$('status').value='Ativo';c.assinaturaStatus='Assinado por todos (gov.br)';salvarGovbr(c,{final:info});toast('Contrato assinado por ambos. Status alterado para Ativo.')}
+  if(etapa==='final'){if(c.govbr?.link){apagarLinkGov(c.govbr.link).catch(()=>{});c.govbr={...c.govbr,link:null}}c.status='Ativo';$('status').value='Ativo';c.assinaturaStatus='Assinado por todos (gov.br)';salvarGovbr(c,{final:info});toast('Contrato assinado por ambos. Status alterado para Ativo.')}
   else{salvarGovbr(c,{contratada:info});toast('PDF assinado por você guardado. Agora envie para a contratante (etapa 3).')}
 }
 async function govBaixar(etapa,c=contratoEmEdicao()){
@@ -1776,24 +1776,51 @@ async function govBaixar(etapa,c=contratoEmEdicao()){
   try{const f=await arquivoOp('ler',`gov_${c.id}_${etapa}`);if(!f)return toast('Arquivo não encontrado.');baixarBlob(f,c.govbr?.[etapa]?.nome||nomeArquivoGov(c,etapa==='final'?'assinado':'assinado_contratada'))}
   catch(e){toast('Falha ao baixar o arquivo: '+traduzErro(e))}
 }
-function mensagemGovbr(c){
-  return `Olá${c.contratante?', '+c.contratante:''}!\n\nSegue o contrato nº ${c.numero}${c.nome?' — '+c.nome:''}, já assinado por ${c.contratada||'nós'} pelo gov.br.\n\nPara assinar:\n1. Baixe o PDF anexo.\n2. Acesse https://assinador.iti.br e entre com a conta gov.br do representante (nível prata ou ouro).\n3. Envie o mesmo PDF, posicione a assinatura e autorize pelo aplicativo gov.br.\n4. Baixe o PDF assinado e nos devolva respondendo esta mensagem.\n\nImportante: assine o arquivo que enviamos (sem editar, imprimir ou converter), para manter as duas assinaturas.\nAs assinaturas podem ser conferidas em https://validar.iti.gov.br.\n\nObrigado!`;
+// Link público para a contratante baixar o PDF assinado pela contratada (sem anexo):
+// cópia em documentosPublicos/{token} (partes de 700 KB), leitura pública só com o token, expira em 60 dias.
+const URL_BAIXAR=new URL('baixar.html',location.href).href.split('?')[0];
+const DIAS_LINK=60;
+function linkDownloadGov(c){return c.govbr?.link?.token?`${URL_BAIXAR}?d=${c.govbr.link.token}`:''}
+async function publicarLinkGov(c){
+  const g=c.govbr||{},atual=g.link;
+  if(atual?.token&&atual.arquivoEm===g.contratada?.em&&new Date(atual.expiraEm)>new Date(Date.now()+7*86400000))return linkDownloadGov(c);
+  const blob=await arquivoOp('ler',`gov_${c.id}_contratada`);if(!blob)throw new Error('o PDF assinado por você não foi encontrado');
+  const token=[...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,'0')).join('');
+  const bytes=new Uint8Array(await blob.arrayBuffer()),n=Math.max(1,Math.ceil(bytes.length/TAM_PARTE)),ref=fdb.collection('documentosPublicos').doc(token);
+  const expira=new Date(Date.now()+DIAS_LINK*86400000);
+  await ref.set({nome:g.contratada.nome||nomeArquivoGov(c,'assinado_contratada'),tipo:'application/pdf',tamanho:bytes.length,partes:n,
+    contrato:c.numero||'',titulo:c.nome||'',contratante:c.contratante||'',contratada:c.contratada||'',criadoEm:new Date().toISOString(),
+    expiraEm:firebase.firestore.Timestamp.fromDate(expira)});
+  for(let k=0;k<n;k++)await ref.collection('partes').doc(String(k)).set({dados:firebase.firestore.Blob.fromUint8Array(bytes.subarray(k*TAM_PARTE,(k+1)*TAM_PARTE))});
+  if(atual?.token)apagarLinkGov(atual).catch(()=>{});
+  c.govbr={...g,link:{token,arquivoEm:g.contratada?.em||'',expiraEm:expira.toISOString(),partes:n}};c.atualizado=Date.now();save();renderGovbr(c);
+  return linkDownloadGov(c);
+}
+async function apagarLinkGov(link){if(!link?.token)return;const ref=fdb.collection('documentosPublicos').doc(link.token);for(let k=0;k<(link.partes||1);k++)await ref.collection('partes').doc(String(k)).delete().catch(()=>{});await ref.delete()}
+function mensagemGovbr(c,link){
+  return `Olá${c.contratante?', '+c.contratante:''}!\n\nSegue o contrato nº ${c.numero}${c.nome?' — '+c.nome:''}, já assinado por ${c.contratada||'nós'} pelo gov.br.\n\nPara assinar:\n1. Baixe o PDF pelo link: ${link||'(link)'}\n2. Acesse https://assinador.iti.br e entre com a conta gov.br do representante (nível prata ou ouro).\n3. Envie o mesmo PDF, posicione a assinatura e autorize pelo aplicativo gov.br.\n4. Baixe o PDF assinado e nos devolva respondendo esta mensagem.\n\nImportante: assine o arquivo baixado pelo link (sem editar, imprimir ou converter), para manter as duas assinaturas. O link fica disponível por ${DIAS_LINK} dias.\nAs assinaturas podem ser conferidas em https://validar.iti.gov.br.\n\nObrigado!`;
 }
 function destinoContratante(){const s=lerSignatarios().find(x=>x.papel==='Contratante')||{};return {email:s.email||'',telefone:$('telefoneContratante').value||''}}
 function govMarcarEnviado(c){if(!c.govbr?.enviadoEm)salvarGovbr(c,{enviadoEm:new Date().toISOString()})}
-async function govEmail(){
+// Abre a janela já no clique (para não ser bloqueada) e só depois publica o link
+async function govEnviarPor(canal){
   const c=contratoEmEdicao();if(!c?.govbr?.contratada)return;
-  await govBaixar('contratada',c);
-  const d=destinoContratante(),u=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(d.email)}&su=${encodeURIComponent('Contrato nº '+c.numero+' para assinatura (gov.br)')}&body=${encodeURIComponent(mensagemGovbr(c))}`;
-  window.open(u,'_blank','noopener');govMarcarEnviado(c);
-  toast('O PDF foi baixado: anexe-o no e-mail antes de enviar.');
+  const janela=window.open('','_blank');
+  if(janela)janela.document.write('<p style="font-family:sans-serif;padding:24px">Preparando o link do contrato...</p>');
+  try{
+    const link=await publicarLinkGov(c),msg=mensagemGovbr(c,link),d=destinoContratante();
+    let url;
+    if(canal==='email')url=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(d.email)}&su=${encodeURIComponent('Contrato nº '+c.numero+' para assinatura (gov.br)')}&body=${encodeURIComponent(msg)}`;
+    else{let n=String(d.telefone).replace(/\D/g,'');if(n&&n.length<=11)n='55'+n;url=`https://wa.me/${n}?text=${encodeURIComponent(msg)}`}
+    if(janela)janela.location.href=url;else window.open(url,'_blank','noopener');
+    govMarcarEnviado(c);toast('Mensagem pronta com o link para baixar o contrato. É só enviar.');
+  }catch(e){janela?.close();toast('Não foi possível gerar o link: '+traduzErro(e))}
 }
-async function govWhatsapp(){
+async function govEmail(){return govEnviarPor('email')}
+async function govWhatsapp(){return govEnviarPor('whatsapp')}
+async function govCopiarLink(){
   const c=contratoEmEdicao();if(!c?.govbr?.contratada)return;
-  await govBaixar('contratada',c);
-  let n=String(destinoContratante().telefone).replace(/\D/g,'');if(n&&n.length<=11)n='55'+n;
-  window.open(`https://wa.me/${n}?text=${encodeURIComponent(mensagemGovbr(c))}`,'_blank','noopener');govMarcarEnviado(c);
-  toast('O PDF foi baixado: anexe-o na conversa do WhatsApp.');
+  try{const link=await publicarLinkGov(c);await navigator.clipboard.writeText(link).then(()=>toast('Link copiado.'),()=>prompt('Copie o link:',link))}catch(e){toast('Não foi possível gerar o link: '+traduzErro(e))}
 }
 async function govCompartilhar(){
   const c=contratoEmEdicao();if(!c?.govbr?.contratada)return;
@@ -1817,6 +1844,7 @@ document.addEventListener('click',e=>{
   else if(id==='govEmail')govEmail();
   else if(id==='govWhatsapp')govWhatsapp();
   else if(id==='govCompartilhar')govCompartilhar();
+  else if(id==='govCopiarLink')govCopiarLink();
 });
 function comPrazo(promessa,ms,msg){let t;return Promise.race([promessa,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error(msg)),ms)})]).finally(()=>clearTimeout(t))}
 var configAutentique=null;
@@ -2347,7 +2375,7 @@ function excluir(id){
   if(!pode('contratos','excluir'))return toast('Você não possui permissão para excluir contratos.');
   if(confirm('Tem certeza que deseja excluir este contrato?')){
     const alvo=contratos.find(x=>x.id===id);
-    if(alvo?.govbr){['contratada','final'].forEach(et=>{if(alvo.govbr[et])arquivoOp('excluir',`gov_${id}_${et}`).catch(()=>{})})}
+    if(alvo?.govbr){['contratada','final'].forEach(et=>{if(alvo.govbr[et])arquivoOp('excluir',`gov_${id}_${et}`).catch(()=>{})});if(alvo.govbr.link)apagarLinkGov(alvo.govbr.link).catch(()=>{})}
     contratos=contratos.filter(x=>x.id!==id);
     save();
     render();
