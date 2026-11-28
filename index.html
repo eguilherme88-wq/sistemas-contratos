@@ -3095,7 +3095,8 @@ function renderPropostas(){
     const aceite=p.aceite?`<div class="text-xs text-emerald-700 mt-0.5" title="Aceita online por ${esc(p.aceite.nome)} (${esc(p.aceite.email)})">✔ Aceite online · ${esc(new Date(p.aceite.dataHora).toLocaleDateString('pt-BR'))}</div>`:'';
     const btn='inline-flex items-center justify-center whitespace-nowrap font-semibold px-3 py-1.5 rounded-lg text-xs';
     const acaoContrato=ct?`<button type="button" class="prop-abrir-contrato ${btn} bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200" data-id="${esc(ct.id)}" title="Abrir o contrato gerado">📄 ${esc(ct.numero||'Contrato')}</button>`
-      :(podeCriar?`<button type="button" class="prop-gerar ${btn} bg-blue-600 hover:bg-blue-700 text-white" data-id="${esc(p.id)}">＋ Contrato</button>`:'');
+      :(!podeCriar?'':st==='Aceita'?`<button type="button" class="prop-gerar ${btn} bg-blue-600 hover:bg-blue-700 text-white" data-id="${esc(p.id)}">＋ Contrato</button>`
+        :`<button type="button" class="${btn} bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" disabled title="Disponível depois que a proposta for aceita">＋ Contrato</button>`);
     const selo={Aceita:'text-emerald-700 bg-emerald-50 border-emerald-200',Recusada:'text-rose-700 bg-rose-50 border-rose-200'}[st]||'text-amber-700 bg-amber-50 border-amber-200';
     return `<tr class="hover:bg-slate-50/60 align-top">
       <td class="py-3 px-4 whitespace-nowrap"><b class="font-mono text-slate-800">${esc(numeroProposta(p))}</b><div class="text-xs text-slate-500 mt-0.5">${esc(dataBR(p.data))}</div></td>
@@ -3114,7 +3115,7 @@ function verProposta(id){
   const linhasMods=mods.map((m,i)=>`<tr><td class="py-2 pr-3 text-slate-500">${i+1}</td><td class="py-2 pr-3">${esc(m.nome)}</td><td class="py-2 text-right whitespace-nowrap">${m.gratuito?'Gratuito':brl(m.valor)+'/mês'}</td></tr>`).join('')
     +(h&&h.adicionais?`<tr><td></td><td class="py-2 pr-3">Adicional de hospedagem (${h.adicionais} sistema(s) × ${brl(h.valorAdicional)})</td><td class="py-2 text-right whitespace-nowrap">${brl(h.valor)}/mês</td></tr>`:'');
   const botoesGerar=ct?`<button type="button" class="prop-abrir-contrato bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(ct.id)}">Abrir contrato ${esc(ct.numero||'')}</button>`
-    :!podeCriar?'':(c.ambas
+    :!podeCriar?'':statusProposta(p)!=='Aceita'?`<span class="inline-flex items-center gap-2 bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-4 py-3 rounded-xl text-sm">⏳ O contrato fica disponível depois que a proposta for aceita.</span><button type="button" disabled class="bg-slate-100 text-slate-400 border border-slate-200 font-bold px-5 py-3 rounded-xl cursor-not-allowed">Gerar contrato</button>`:(c.ambas
       ?`<button type="button" class="prop-gerar bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(p.id)}" data-forma="parcelado">Gerar contrato — 12 parcelas</button><button type="button" class="prop-gerar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(p.id)}" data-forma="avista">Gerar contrato — à vista</button>`
       :`<button type="button" class="prop-gerar bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl" data-id="${esc(p.id)}">Gerar contrato</button>`);
   $('propModalCorpo').innerHTML=`
@@ -3155,7 +3156,7 @@ function gerarContratoDaProposta(id,forma){
   const p=precDados?.propostas.find(x=>x.id===id);if(!p)return;
   const existente=contratoDaProposta(p);if(existente){fecharPropostaModal();return editar(existente.id)}
   const st=statusProposta(p);
-  if(st!=='Aceita'&&!confirm(`Esta proposta está com status "${st}". Deseja gerar o contrato mesmo assim?`))return;
+  if(st!=='Aceita')return toast(`A proposta está com status "${st}". O contrato só pode ser gerado depois do aceite.`);
   const c=condicoesPropostaPrec(p);
   if(!forma)forma=c.parcelado?'parcelado':'avista';
   const cli=clienteProposta(p),emp=precDados.empresa||{},mods=modulosProposta(p),sistema=sistemaProposta(p),num=numeroProposta(p);
