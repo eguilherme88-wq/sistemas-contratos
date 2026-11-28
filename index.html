@@ -880,13 +880,12 @@
             <table class="w-full text-left border-collapse tabela-resp">
               <thead>
                 <tr class="bg-slate-50/70 border-b border-slate-200/60 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                  <th class="py-3.5 px-6">Número</th>
-                  <th class="py-3.5 px-6">Data</th>
-                  <th class="py-3.5 px-6">Cliente</th>
-                  <th class="py-3.5 px-6">Sistema</th>
-                  <th class="py-3.5 px-6">Condições</th>
-                  <th class="py-3.5 px-6">Status</th>
-                  <th class="py-3.5 px-6 text-right">Ações</th>
+                  <th class="py-3 px-4">Proposta</th>
+                  <th class="py-3 px-4">Cliente</th>
+                  <th class="py-3 px-4">Sistema</th>
+                  <th class="py-3 px-4">Condições</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody id="propLista" class="divide-y divide-slate-100 text-sm"></tbody>
@@ -2872,8 +2871,8 @@ function renderPropostas(){
   info.innerHTML=`<span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">● Conectado automaticamente</span>${admin?'<button type="button" id="propDesconectar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-xl text-xs border border-slate-200">Desconectar</button>':''}`;
   login.style.display='none';cont.style.display='';
   const lista=$('propLista');
-  if(precErro){lista.innerHTML=`<tr><td colspan="7" class="py-10 px-6 text-center text-rose-600">${esc(precErro)}</td></tr>`;return}
-  if(precCarregando||!precDados){lista.innerHTML='<tr><td colspan="7" class="py-10 px-6 text-center text-slate-500">Carregando propostas…</td></tr>';return}
+  if(precErro){lista.innerHTML=`<tr><td colspan="6" class="py-10 px-6 text-center text-rose-600">${esc(precErro)}</td></tr>`;return}
+  if(precCarregando||!precDados){lista.innerHTML='<tr><td colspan="6" class="py-10 px-6 text-center text-slate-500">Carregando propostas…</td></tr>';return}
 
   const todas=precDados.propostas;
   $('propKTotal').textContent=todas.length;
@@ -2885,22 +2884,23 @@ function renderPropostas(){
   const fs=$('propFiltroStatus').value,q=$('propBusca').value.trim().toLowerCase();
   const filtradas=todas.filter(p=>(!fs||statusProposta(p)===fs)&&(!q||[p.cliente,numeroProposta(p),sistemaProposta(p),p.contato].some(v=>String(v||'').toLowerCase().includes(q))))
     .sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-  if(!filtradas.length){lista.innerHTML=`<tr><td colspan="7" class="py-10 px-6 text-center text-slate-500">${todas.length?'Nenhuma proposta encontrada com esses filtros.':'Nenhuma proposta cadastrada no sistema de precificação.'}</td></tr>`;return}
+  if(!filtradas.length){lista.innerHTML=`<tr><td colspan="6" class="py-10 px-6 text-center text-slate-500">${todas.length?'Nenhuma proposta encontrada com esses filtros.':'Nenhuma proposta cadastrada no sistema de precificação.'}</td></tr>`;return}
   const podeCriar=pode('contratos','criar');
   lista.innerHTML=filtradas.map(p=>{
     const st=statusProposta(p),c=condicoesPropostaPrec(p),ct=contratoDaProposta(p);
-    const cond=`${c.parcelado?(c.m12?`12 × ${brl(c.parcela)}`:`${brl(c.parcela)}/mês`):`À vista ${brl(c.avistaValor)}`}${c.ambas?`<br><small class="text-slate-500">ou à vista ${brl(c.avistaValor)}</small>`:''}`;
-    const aceite=p.aceite?`<br><small class="text-emerald-700">Aceita online por ${esc(p.aceite.nome)} em ${esc(new Date(p.aceite.dataHora).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}))}</small>`:'';
-    const acaoContrato=ct?`<button type="button" class="prop-abrir-contrato bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold px-3 py-2 rounded-lg text-xs" data-id="${esc(ct.id)}">📄 ${esc(ct.numero||'Contrato')}</button>`
-      :(podeCriar?`<button type="button" class="prop-gerar bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-2 rounded-lg text-xs" data-id="${esc(p.id)}">＋ Gerar contrato</button>`:'');
-    return `<tr class="hover:bg-slate-50/60">
-      <td class="py-4 px-6 font-mono font-bold text-slate-700">${esc(numeroProposta(p))}</td>
-      <td class="py-4 px-6 whitespace-nowrap">${esc(dataBR(p.data))}</td>
-      <td class="py-4 px-6"><b class="text-slate-900">${esc(p.cliente)}</b>${p.contato?`<br><small class="text-slate-500">${esc(p.contato)}</small>`:''}${aceite}</td>
-      <td class="py-4 px-6">${esc(sistemaProposta(p))}<br><small class="text-slate-500">${(p.modulosIds||[]).length} módulo(s)</small></td>
-      <td class="py-4 px-6">${cond}</td>
-      <td class="py-4 px-6">${seloStatusProposta(st)}</td>
-      <td class="py-4 px-6 text-right"><div class="flex flex-wrap justify-end gap-2"><button type="button" class="prop-ver bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold px-3 py-2 rounded-lg text-xs" data-id="${esc(p.id)}">Ver detalhes</button>${acaoContrato}</div></td>
+    const cond=`<span class="whitespace-nowrap font-semibold text-slate-800">${c.parcelado?(c.m12?`12 × ${brl(c.parcela)}`:`${brl(c.parcela)}/mês`):`À vista ${brl(c.avistaValor)}`}</span>${c.ambas?`<br><small class="text-slate-500 whitespace-nowrap">ou à vista ${brl(c.avistaValor)}</small>`:''}`;
+    const aceite=p.aceite?`<div class="text-xs text-emerald-700 mt-0.5" title="Aceita online por ${esc(p.aceite.nome)} (${esc(p.aceite.email)})">✔ Aceite online · ${esc(new Date(p.aceite.dataHora).toLocaleDateString('pt-BR'))}</div>`:'';
+    const btn='inline-flex items-center justify-center whitespace-nowrap font-semibold px-3 py-1.5 rounded-lg text-xs';
+    const acaoContrato=ct?`<button type="button" class="prop-abrir-contrato ${btn} bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200" data-id="${esc(ct.id)}" title="Abrir o contrato gerado">📄 ${esc(ct.numero||'Contrato')}</button>`
+      :(podeCriar?`<button type="button" class="prop-gerar ${btn} bg-blue-600 hover:bg-blue-700 text-white" data-id="${esc(p.id)}">＋ Contrato</button>`:'');
+    const selo={Aceita:'text-emerald-700 bg-emerald-50 border-emerald-200',Recusada:'text-rose-700 bg-rose-50 border-rose-200'}[st]||'text-amber-700 bg-amber-50 border-amber-200';
+    return `<tr class="hover:bg-slate-50/60 align-top">
+      <td class="py-3 px-4 whitespace-nowrap"><b class="font-mono text-slate-800">${esc(numeroProposta(p))}</b><div class="text-xs text-slate-500 mt-0.5">${esc(dataBR(p.data))}</div></td>
+      <td class="py-3 px-4 min-w-[200px]"><b class="text-slate-900 leading-snug">${esc(p.cliente)}</b>${p.contato?`<div class="text-xs text-slate-500 mt-0.5">${esc(p.contato)}</div>`:''}${aceite}</td>
+      <td class="py-3 px-4">${esc(sistemaProposta(p))}<div class="text-xs text-slate-500 mt-0.5">${(p.modulosIds||[]).length} módulo(s)</div></td>
+      <td class="py-3 px-4">${cond}</td>
+      <td class="py-3 px-4"><span class="inline-block whitespace-nowrap text-xs font-bold border px-2.5 py-1 rounded-full ${selo}">${esc(st)}</span></td>
+      <td class="py-3 px-4"><div class="flex justify-end gap-2"><button type="button" class="prop-ver ${btn} bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200" data-id="${esc(p.id)}">Detalhes</button>${acaoContrato}</div></td>
     </tr>`;
   }).join('');
 }
