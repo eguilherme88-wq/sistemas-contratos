@@ -347,6 +347,9 @@
   html.dark .selo-teste-data{color:#94a3b8}
   #preview .report-sub-text,#preview .report-pre{white-space:pre-line}
   #preview .report-pre{text-align:justify;margin:0 0 9px}
+  /* Tabelas de contratos: colunas mais compactas e organizadas */
+  .tabela-contratos thead th{padding-left:1rem !important;padding-right:1rem !important;white-space:nowrap}
+  @media (min-width:1024px){.tabela-contratos{table-layout:auto}}
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
@@ -535,7 +538,7 @@
           <button class="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/80 px-4 py-2 rounded-xl transition-all" data-page="contratos">Ver todos os registros →</button>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse tabela-resp">
+          <table class="w-full text-left border-collapse tabela-resp tabela-contratos">
             <thead>
               <tr class="bg-slate-50/70 border-b border-slate-200/60 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                 <th class="py-3.5 px-6">Número</th>
@@ -575,7 +578,7 @@
           </div>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse tabela-resp">
+          <table class="w-full text-left border-collapse tabela-resp tabela-contratos">
             <thead>
               <tr class="bg-slate-50/70 border-b border-slate-200/60 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                 <th class="py-3.5 px-6">Número</th>
@@ -2422,26 +2425,29 @@ function tabela(id,a){
   const ver=pode('contratos','visualizar');
   const editarPerm=pode('contratos','editar');
   const excluirPerm=pode('contratos','excluir');
-  $(id).innerHTML=a.length?a.map(x=>`
-    <tr class="hover:bg-slate-50/80 transition-colors">
-      <td class="py-4 px-6 font-mono font-bold text-slate-700">${esc(x.numero)}</td>
-      <td class="py-4 px-6">
-        <b class="text-slate-900 block">${esc(x.nome)}</b>
+  const curto=(t,n)=>{t=String(t||'');return t.length>n?t.slice(0,n-1).trimEnd()+'…':t};
+  $(id).innerHTML=a.length?a.map(x=>{
+    // título sem repetir o nome do contratante (já aparece na coluna ao lado)
+    const titulo=String(x.nome||'').replace(new RegExp('\\s*[—–-]\\s*'+String(x.contratante||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*$','i'),'')||x.nome;
+    return `
+    <tr class="hover:bg-slate-50/80 transition-colors align-middle">
+      <td class="py-3.5 px-4 font-mono font-bold text-slate-700 whitespace-nowrap">${esc(x.numero)}</td>
+      <td class="py-3.5 px-4 min-w-[220px] max-w-[340px]">
+        <b class="text-slate-900 block leading-snug line-clamp-2" title="${esc(x.nome)}">${esc(titulo)}</b>
         <span class="text-xs text-slate-400 font-medium">${esc(x.tipo||'Contrato')}</span>
       </td>
-      <td class="py-4 px-6 text-slate-600">${esc(x.contratante)}</td>
-      <td class="py-4 px-6 text-slate-600">${esc(x.contratada)}</td>
-      <td class="py-4 px-6 text-slate-600 font-medium">${x.fim?new Date(x.fim+'T00:00:00').toLocaleDateString('pt-BR'):'Não definida'}</td>
-      <td class="py-4 px-6">${badgeStatus(x.status)}</td>
-      <td class="py-4 px-6 text-right space-x-2">
-        ${(ver&&!(x.status==='Ativo'&&x.autentiqueId))?`<button class="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all view" data-id="${esc(x.id)}">Ver</button>`:''}
-        ${editarPerm?`<button class="text-slate-600 hover:text-slate-900 font-bold text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-all edit" data-id="${esc(x.id)}">Editar</button>`:''}
-        ${(ver&&x.status==='Ativo'&&(x.autentiqueId||x.govbr?.final))?`<button class="text-violet-700 hover:text-violet-900 font-bold text-xs bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-all baixar-assinado-lista" data-id="${esc(x.id)}" title="${x.govbr?.final?'Baixar o PDF assinado pelo gov.br':'Baixar o PDF com as assinaturas do Autentique'}">PDF assinado</button>`:''}
-        ${(editarPerm&&x.status==='Ativo')?`<button class="text-emerald-700 hover:text-emerald-900 font-bold text-xs bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-all gerar-aditivo" data-id="${esc(x.id)}">Aditivo</button>`:''}
-        ${excluirPerm?`<button class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all delete-contract" data-id="${esc(x.id)}">Excluir</button>`:''}
-      </td>
-    </tr>
-  `).join(''):`<tr><td colspan="7" class="text-center py-12 text-slate-400 font-medium">Nenhum registro encontrado.</td></tr>`;
+      <td class="py-3.5 px-4 text-slate-600 min-w-[160px] max-w-[240px]"><span class="line-clamp-2 leading-snug" title="${esc(x.contratante)}">${esc(x.contratante)}</span></td>
+      <td class="py-3.5 px-4 text-slate-600 min-w-[150px] max-w-[220px]"><span class="line-clamp-2 leading-snug" title="${esc(x.contratada)}">${esc(x.contratada)}</span></td>
+      <td class="py-3.5 px-4 text-slate-600 font-medium whitespace-nowrap">${x.fim?new Date(x.fim+'T00:00:00').toLocaleDateString('pt-BR'):'Não definida'}</td>
+      <td class="py-3.5 px-4 whitespace-nowrap">${badgeStatus(x.status)}</td>
+      <td class="py-3.5 px-4"><div class="flex flex-wrap justify-end gap-1.5 min-w-[150px]">
+        ${(ver&&!(x.status==='Ativo'&&x.autentiqueId))?`<button class="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap view" data-id="${esc(x.id)}">Ver</button>`:''}
+        ${editarPerm?`<button class="text-slate-600 hover:text-slate-900 font-bold text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap edit" data-id="${esc(x.id)}">Editar</button>`:''}
+        ${(ver&&x.status==='Ativo'&&(x.autentiqueId||x.govbr?.final))?`<button class="text-violet-700 hover:text-violet-900 font-bold text-xs bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap baixar-assinado-lista" data-id="${esc(x.id)}" title="${x.govbr?.final?'Baixar o PDF assinado pelo gov.br':'Baixar o PDF com as assinaturas do Autentique'}">PDF assinado</button>`:''}
+        ${(editarPerm&&x.status==='Ativo')?`<button class="text-emerald-700 hover:text-emerald-900 font-bold text-xs bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap gerar-aditivo" data-id="${esc(x.id)}">Aditivo</button>`:''}
+        ${excluirPerm?`<button class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap delete-contract" data-id="${esc(x.id)}">Excluir</button>`:''}
+      </div></td>
+    </tr>`}).join(''):`<tr><td colspan="7" class="text-center py-12 text-slate-400 font-medium">Nenhum registro encontrado.</td></tr>`;
 }
 
 function cadastro(tipo){
