@@ -50,6 +50,15 @@ Limitações do plano gratuito:
 - O administrador **não define a senha de outro usuário**: o sistema envia um e-mail de redefinição para o próprio usuário.
 - Ao excluir um usuário, o perfil é removido (ele perde o acesso), mas a conta de login continua listada em Authentication no console do Firebase.
 
+## Propostas Comerciais (integração com o Partner Precificação SaaS)
+
+O menu **Propostas Comerciais** mostra, em tempo real, as propostas geradas no sistema de precificação (`precificacao-saas`).
+
+- As propostas ficam no Firebase do sistema de precificação (projeto `sistema-precificacao-b5349`), que só o próprio dono pode ler. Por isso, na primeira vez, o menu pede o **e-mail e a senha do sistema de precificação**. A conexão fica salva no aparelho e é encerrada ao sair do sistema de contratos ou ao clicar em *Desconectar*.
+- A integração é **somente leitura**: nada é alterado no sistema de precificação e as regras do Firestore dele não precisam mudar.
+- **Gerar contrato**: preenche um novo contrato com o cliente (cadastrado automaticamente em Contratantes, se ainda não existir), a empresa contratada, a vigência de 12 meses, o valor (12 parcelas ou à vista), o meio de pagamento e o objeto com a lista de módulos. O contrato fica vinculado à proposta (`propostaId`) e a lista passa a mostrar o número do contrato.
+- Para usuários de nível Master/Usuário, libere o acesso em **Usuários e Acessos → Propostas Comerciais**.
+
 ## Estrutura
 
 ```
