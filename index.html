@@ -1265,6 +1265,9 @@ async function carregarDados(){
   const tiposPadrao=cad.tipos;
   cad={contratantes:lp.filter(r=>r.tipo==='contratante').map(semTipo),contratados:lp.filter(r=>r.tipo==='contratado').map(semTipo),tipos:lt};
   const conf=Object.fromEntries(cfg.docs.map(d=>[d.id,d.data()]));
+  // Servidor de integração do Autentique: configuração única, compartilhada por todos os aparelhos e usuários
+  configAutentique=conf.autentique||null;
+  try{if(configAutentique?.endpoint){localStorage.setItem('autentiqueEndpoint',configAutentique.endpoint);if(configAutentique.chave)localStorage.setItem('autentiqueChave',configAutentique.chave)}}catch(e){}
   if(Array.isArray(conf.modelo?.itens)&&conf.modelo.itens.length)modelo=conf.modelo.itens;
   try{if(conf.logo?.valor)localStorage.setItem('contratosProLogo',conf.logo.valor);else localStorage.removeItem('contratosProLogo')}catch(e){}
   tirarFoto();
@@ -1695,6 +1698,9 @@ function atualizarPainelAssinatura(x={}){
   $('enviarAutentique').textContent=x.autentiqueId?'✉ Reenviar como novo documento':'✉ Enviar para assinatura no Autentique';
 }
 function comPrazo(promessa,ms,msg){let t;return Promise.race([promessa,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error(msg)),ms)})]).finally(()=>clearTimeout(t))}
+var configAutentique=null;
+// Guarda no banco o servidor e a chave usados com sucesso, para os outros aparelhos já virem configurados
+function guardarConfigAutentique(base,chave){if(!base||(configAutentique?.endpoint===base&&(configAutentique?.chave||'')===chave))return;configAutentique={endpoint:base,chave,atualizadoEm:new Date().toISOString(),por:atual?.login||''};fdb.collection('config').doc('autentique').set(configAutentique).catch(e=>console.warn('config autentique:',e))}
 async function chamarAutentique(caminho,opcoes={},ids={endpoint:'autentiqueEndpoint',chave:'autentiqueChave'}){
   const base=normalizarBaseAutentique($(ids.endpoint).value);localStorage.setItem('autentiqueEndpoint',base);
   const chave=$(ids.chave).value.trim();if(chave)localStorage.setItem('autentiqueChave',chave);else localStorage.removeItem('autentiqueChave');
@@ -1715,6 +1721,7 @@ async function chamarAutentique(caminho,opcoes={},ids={endpoint:'autentiqueEndpo
     throw new Error(det||('HTTP '+r.status));
   }
   if(!data.id&&opcoes.method==='POST')throw new Error('o servidor respondeu, mas não devolveu o identificador do documento no Autentique. '+(data.erro||''));
+  guardarConfigAutentique(base,chave);
   return data;
 }
 function contadorEnvio(idStatus,texto){const ini=Date.now(),el=$(idStatus);el.textContent=texto+'...';const t=setInterval(()=>{el.textContent=texto+'... '+Math.round((Date.now()-ini)/1000)+'s'},1000);return ()=>clearInterval(t)}
